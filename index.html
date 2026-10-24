@@ -1,0 +1,793 @@
+<!doctype html>
+<html lang="zh-Hant"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#121725"><title>SUOU Video Recorder v4.4.6.7 — Audio Guard + Episode Bridge</title>
+<style>:root{color-scheme:dark;--bg:#0b1020;--panel:#151e32;--line:#32405c;--txt:#f1f4fa;--muted:#aebbd1;--accent:#71b6ff}*{box-sizing:border-box}body{margin:0;background:linear-gradient(145deg,#0b1020,#111b30);color:var(--txt);font:15px system-ui,-apple-system,'Segoe UI',sans-serif}.shell{max-width:1250px;margin:auto;padding:24px}.top{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px}h1{font-size:25px;margin:0 0 5px}.sub{color:var(--muted);font-size:13px}.pill{border:1px solid var(--line);border-radius:99px;padding:6px 12px;font-size:12px;color:var(--muted)}.panel{background:rgba(21,30,50,.92);border:1px solid var(--line);border-radius:18px;padding:18px;margin:16px 0;box-shadow:0 10px 32px #0002}h2{font-size:17px;margin:0 0 14px}.toolbar{display:flex;gap:9px;flex-wrap:wrap;align-items:center;margin-bottom:12px}input[type=url],input[type=text]{flex:1;min-width:180px;padding:12px;border-radius:10px;color:var(--txt);background:#0c1425;border:1px solid var(--line);font:inherit}button,a.btn{border:0;border-radius:10px;background:#284263;color:white;padding:11px 15px;font:inherit;font-weight:600;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;justify-content:center}button.primary{background:#1877c9}button.danger{background:#b73f50}button:disabled{opacity:.4;cursor:not-allowed}.viewer{height:min(65vh,670px);min-height:350px;background:#080c13;position:relative;border-radius:12px;overflow:hidden;border:1px solid #27334a}.viewer iframe{width:100%;height:100%;border:0;background:#fff}.hint{color:var(--muted);font-size:13px;line-height:1.7;margin:10px 0 0}.grid{display:grid;grid-template-columns:1fr 1fr;gap:15px}.check{display:flex;align-items:center;gap:8px}.rec{display:flex;align-items:center;gap:12px;flex-wrap:wrap}.time{font:600 23px ui-monospace,Consolas,monospace;letter-spacing:1px}.dot{display:inline-block;width:10px;height:10px;border-radius:50%;background:#60718b}.dot.live{background:#fb485f;animation:blink 1s infinite}@keyframes blink{50%{opacity:.2}}video{width:100%;max-height:420px;background:#080c13;border-radius:12px;border:1px solid var(--line)}.state{color:#dbe7f8;margin-top:12px;min-height:20px}.note{background:#10243b;border:1px solid #34577a;border-radius:12px;padding:12px 14px;line-height:1.7;color:#cfe2fa}.steps{line-height:1.9;padding-left:20px}footer{font-size:12px;color:#9daec8;padding:16px 0 30px}@media(max-width:780px){.shell{padding:14px}.grid{grid-template-columns:1fr}.viewer{min-height:300px;height:49vh}h1{font-size:22px}}.fullscreen-capture{position:fixed;inset:0;z-index:9999;background:#000;display:none;flex-direction:column}.fullscreen-capture.active{display:flex}.fullscreen-capture video{flex:1;min-height:0;max-height:none;width:100%;height:100%;object-fit:contain;border:none;border-radius:0}.full-controls{display:flex;justify-content:center;align-items:center;gap:12px;padding:10px;background:#101827;flex-wrap:wrap}.full-controls .time{font-size:17px}.warning{color:#ffd38b} .settings{display:flex;gap:14px;flex-wrap:wrap;line-height:1.7}
+/* Desktop full-frame viewing mode */
+.viewer{height:auto;min-height:0;aspect-ratio:16 / 9;max-height:none}
+.viewer[data-view-mode="vertical"]{aspect-ratio:9 / 16;max-height:80vh;width:min(100%,460px);margin-inline:auto}
+.viewer[data-view-mode="auto"]{aspect-ratio:auto;height:min(76vh,860px);min-height:380px}
+.viewer iframe{display:block;width:100%;height:100%}
+.viewer:fullscreen{width:100vw;height:100vh;max-height:none;aspect-ratio:auto;border:0;border-radius:0;background:#000}
+.viewer:fullscreen iframe{width:100%;height:100%;object-fit:contain}
+#preview{max-width:100%;object-fit:contain;background:#000}
+.viewer-tools{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:8px 0 12px}
+.viewer-tools label{font-size:13px;color:var(--muted)}
+.viewer-tools select{background:var(--panel);color:var(--txt);border:1px solid var(--line);padding:10px;border-radius:8px}
+.viewer-message{font-size:13px;color:var(--muted);margin:0 0 12px}
+@media(max-width:650px){.viewer{min-height:0}.viewer[data-view-mode="vertical"]{max-height:70vh}}
+
+/* v4.4.2 visual timeline */
+.visual-trim{margin-top:16px;padding:14px;background:#0d1729;border:1px solid #354768;border-radius:12px}
+.visual-trim .filmstrip{height:76px;display:flex;overflow:hidden;border-radius:8px;background:#060c17;position:relative;cursor:crosshair;border:1px solid #48617e;touch-action:pan-y}
+.visual-trim .filmstrip img{width:8.333333%;height:100%;object-fit:cover;flex:1;min-width:0}
+.visual-trim .filmstrip .no-thumbs{margin:auto;color:#aab7ca;font-size:13px}
+.visual-trim .timebar{display:flex;justify-content:space-between;color:#9bb3cc;font-size:12px;margin:6px 0}
+.visual-trim input[type=range]{width:100%;accent-color:#61afff;cursor:pointer}
+.visual-trim .range-label{font-size:13px;color:#bcd1e6;margin:8px 0 4px}
+.visual-trim .range-row{display:grid;grid-template-columns:1fr 1fr;gap:13px}
+.visual-trim .frame-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:10px 0}
+.visual-trim button{padding:8px 11px}
+.visual-trim .filmstrip-indicators{position:relative;height:8px;border-radius:3px;background:#182840;overflow:hidden;margin-top:2px}
+.visual-trim .selected-band{position:absolute;top:0;height:100%;background:#71b6ff;opacity:.9}
+.visual-trim .needle{position:absolute;top:0;height:100%;width:2px;background:#ffb86b;z-index:2}
+@media(max-width:600px){.visual-trim .range-row{grid-template-columns:1fr}.visual-trim .filmstrip{height:58px}}
+</style><style>
+[hidden]{display:none!important}.ios-mode[hidden]{display:none!important}.ios-mode .hero{background:linear-gradient(145deg,#1b3454,#171f36)}.ios-mode h2{font-size:19px;line-height:1.35}.eyebrow{font-size:11px;letter-spacing:.13em;color:#9fd4ff;font-weight:750;margin-bottom:10px}.ios-mode .btn.primary{background:#1877c9}.ios-mode .btn{margin:8px 0}.faq{border-top:1px solid var(--line);padding:12px 0}.faq summary{cursor:pointer;font-weight:650}.faq[open] .hint{margin-bottom:4px}.file-list{margin:16px 0;display:grid;gap:12px}.file-item{background:#0c1425;border:1px solid var(--line);border-radius:13px;padding:13px}.file-item .toolbar{margin:12px 0 2px}.file-item input{width:100%;min-width:0}.file-meta{word-break:break-word;color:var(--muted);font-size:12px;margin-top:5px}.file-item button{font-size:13px;padding:10px}.file-item video{max-height:270px;margin:9px 0}.ios-mode .note{margin-top:12px}.url-editor{margin-top:12px}.url-editor label{display:block;color:var(--muted);margin:0 0 8px;font-size:13px}.url-editor input{width:100%;min-width:0}.url-editor .toolbar{margin-top:10px}.file-picker{cursor:pointer;max-width:100%}@media(max-width:650px){.ios-mode .steps{padding-left:24px}.ios-mode button,.ios-mode .btn{min-height:44px}.shell{padding:max(12px,env(safe-area-inset-top)) 14px max(20px,env(safe-area-inset-bottom))}}
+
+.anti-ad-panel{border-color:#4d718b}.anti-ad-progress{font-size:13px;color:#b9d7f4;margin:12px 0}.anti-ad-row{display:flex;gap:12px;align-items:flex-start;padding:12px 0;border-top:1px solid var(--line);line-height:1.6}.anti-ad-row input{width:20px;height:20px;flex:none;margin-top:3px;accent-color:#53aafa}.anti-ad-row strong{display:block}.anti-ad-row small{display:block;color:var(--muted);font-size:13px}.anti-ad-links{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.anti-ad-links a{color:#b5dcff;text-decoration:underline;text-underline-offset:3px}.anti-ad-alert{border-left:3px solid #f0c36a;padding:10px 12px;background:#2a2430;color:#ffe5ae;line-height:1.65;font-size:13px;border-radius:7px}
+</style>
+<style>
+.trim-wrap{margin-top:18px;border-top:1px solid var(--line);padding-top:17px}
+.trim-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.trim-grid label{display:flex;flex-direction:column;gap:7px;color:var(--muted);font-size:13px}
+.trim-grid input,.trim-wrap input[type=file]{min-width:0;max-width:100%;background:#0c1425;color:#fff;border:1px solid var(--line);border-radius:9px;padding:10px;font:inherit}
+.trim-wrap input[type=range]{width:100%;accent-color:#71b6ff}
+.trim-wrap progress{width:100%;height:14px;accent-color:#3b9df0}
+.trim-wrap button{margin-bottom:5px}
+.trim-wrap .trim-result video{margin-top:10px;max-height:320px}
+@media(max-width:600px){.trim-grid{grid-template-columns:1fr}}
+</style>
+</head><body><main class="shell"><header class="top"><div><h1>SUOU Video Recorder</h1><div class="sub">網頁觀看 · 分頁錄影 · 聲音收錄 · 本機保存 ｜ v4.4.6.6</div></div><span class="pill" id="support">正在檢查錄影支援…</span></header>
+
+<section id="iosMode" class="ios-mode" hidden>
+  <section class="panel hero"><div class="eyebrow">IPHONE / IPAD 專用模式</div><h2>用系統錄影，保存影片</h2><p class="hint">iOS Safari 無法讓網頁直接啟動其他分頁的螢幕錄影。這個介面協助你開啟來源網站、使用控制中心錄影，並整理錄好的影片；整個過程不會把影片傳到伺服器。</p>
+  <a id="iosOpen" class="btn primary" href="https://huangguoai.com/" target="_blank" rel="noopener noreferrer">開啟影片網站 ↗</a>
+  <div class="url-editor"><label for="iosSiteURL">影片網站網址（可更換）</label><input id="iosSiteURL" type="url" inputmode="url" autocomplete="url" placeholder="https://example.com/video" value="https://huangguoai.com/"><div class="toolbar"><button id="iosSaveSite" type="button">儲存常用網址</button><button id="iosResetSite" type="button">恢復主站網址</button></div><p id="iosSiteStatus" class="hint" role="status" aria-live="polite">首次使用預設黃果 AI 主站，實際影片網址可貼在上方。</p></div>
+  <p class="hint">開啟後在另一個分頁觀看，播放前先啟動 iPhone 系統螢幕錄影。若來源網站顯示 410 Gone，請改填目前有效的網址；網頁無法修復來源伺服器的 410 錯誤。</p></section>
+  <section class="panel anti-ad-panel" aria-labelledby="antiAdTitle"><div class="eyebrow">SAFARI CLEAN VIEW / 手動防護</div><h2 id="antiAdTitle">防浮動廣告與防誤觸</h2>
+  <p class="hint">若影片上方有浮動廣告、透明點擊層，先在 Safari 設定防護，再開啟來源影片。以下選項為<strong>自行完成設定的檢查清單</strong>，不會直接控制 Safari 或變更影片網站。</p>
+  <div class="anti-ad-progress" id="antiAdProgress" role="status" aria-live="polite">已完成 0 / 3 項手動設定</div>
+  <label class="anti-ad-row"><input type="checkbox" data-anti-ad="popups"><span><strong>1. 啟用阻擋彈出式視窗</strong><small>到 iPhone「設定 → App → Safari → 阻擋彈出式視窗」，手動開啟。此設定可能無法阻止所有由點擊觸發的新分頁。</small></span></label>
+  <label class="anti-ad-row"><input type="checkbox" data-anti-ad="hide"><span><strong>2. 隱藏影片上的浮動廣告</strong><small>在來源網站的 Safari「頁面選單 → 隱藏干擾項目」，選取浮動視窗並隱藏，按「完成」。對經常更新的廣告可能失效。</small></span></label>
+  <label class="anti-ad-row"><input type="checkbox" data-anti-ad="extension"><span><strong>3. 如有需要，啟用 Safari 內容阻擋器</strong><small>安裝可信任的內容阻擋擴充功能，於 Safari 擴充功能設定中啟用，再重開來源頁面。過濾效果因網站而異。</small></span></label>
+  <div class="anti-ad-links"><a href="https://support.apple.com/guide/iphone/block-pop-ups-ipha49a83ae8/ios" target="_blank" rel="noopener noreferrer">Apple：阻擋彈出視窗 ↗</a><a href="https://support.apple.com/en-asia/120682" target="_blank" rel="noopener noreferrer">Apple：隱藏干擾項目 ↗</a></div>
+  <details class="faq"><summary>遇到透明廣告層，碰一下就跳轉怎麼辦？</summary><p class="hint">不要連續點擊廣告或不明關閉符號。可先使用 Safari「隱藏干擾項目」、內容阻擋器，再重新載入來源頁；若仍被轉址，關閉新分頁並回到影片。某些網站會將廣告點擊層與播放器綁在一起，普通錄影網頁無法從別的分頁移除它。</p></details>
+  <div class="anti-ad-alert">這不是系統層級的廣告攔截開關。本工具不會修改黃果 AI 網站，也無法保證廣告完全消失；請勿安裝彈窗要求的未知描述檔或下載程式。</div></section>
+  <section class="panel"><h2>01 ｜ 如何啟動系統錄影</h2>
+  <ol class="steps"><li>從螢幕右上角向下滑，打開「控制中心」。</li><li>找到「螢幕錄影」按鈕（圓圈中有實心點）。若找不到，長按控制中心空白處，選擇「加入控制項」，加入「螢幕錄影」。</li><li>點一下錄影按鈕，等待 3 秒倒數後切換到影片網站，開啟全螢幕播放。</li><li>錄好後，點螢幕頂端紅色錄影指示，或返回控制中心按錄影按鈕停止。影片通常會自動存到「照片」。</li></ol>
+  <details class="faq"><summary>聲音與麥克風怎麼設定？</summary><p class="hint">長按控制中心的「螢幕錄影」按鈕，可查看麥克風是否開啟。只想錄網站原本的聲音，通常關閉麥克風即可；但能否收錄 App／網站內部音訊由 iOS 與播放內容決定。<strong>無法保證靜音播放時仍錄到聲音</strong>，建議先錄 10 秒確認。</p></details>
+  <details class="faq"><summary>為什麼無法直接按網頁按鈕錄影？</summary><p class="hint">iPhone Safari 不支援桌面版所用的分頁擷取 API，也不能讓一般網頁自動啟動 iOS 控制中心錄影或擷取其他 App 的影像。部分受保護內容可能呈現黑畫面。</p></details></section>
+  <section class="panel"><h2>02 ｜ 錄影後整理檔案</h2><p class="hint">從「照片」選擇錄好的影片，或先在「照片」→「分享」→「儲存到檔案」後從「檔案」選取。可為影片重新命名、分享或另存。選取的影片只在目前頁面中整理，重新整理後需重新選取。</p>
+  <label class="btn primary file-picker" for="iosFiles">＋ 匯入錄好的影片</label><input type="file" id="iosFiles" accept="video/*,.mov,.mp4,.webm" multiple style="position:absolute;opacity:0;width:1px;height:1px;pointer-events:none" />
+  <div id="iosList" class="file-list"><p class="hint">尚未選取影片。先用系統螢幕錄影，再回到這裡匯入。</p></div>
+  <div class="note">「下載／另存」會交由 Safari 或 iOS 儲存介面處理；無法自動寫入「照片」。檔案較大時可能需要更多時間或儲存空間。影片名稱的修改不會改動照片圖庫中的原始影片。</div></section>
+  <section class="panel"><h2>03 ｜ iPhone 錄影後的快速整理</h2><ol class="steps"><li>開啟「照片」→「媒體類型」→「螢幕錄影」（若你的 iOS 版本有此分類），找到剛錄的影片。</li><li>用照片內建「編輯」裁掉控制中心操作和影片前後空白。</li><li>按「分享」→「儲存到檔案」，選擇「iCloud Drive」或「我的 iPhone」。</li><li>需要傳到電腦時，可使用 AirDrop、iCloud Drive，或回到本頁匯入後重新命名及分享。</li></ol></section>
+</section>
+<section class="panel desktop-section"><h2>01 ｜ 觀看網頁</h2><div class="toolbar"><input aria-label="網站網址" type="url" id="url" value="https://huangguoai.com/"><button id="load">在下方開啟</button><button id="open" class="primary">在新分頁開啟 ↗</button></div><div class="viewer-tools"><label for="suouViewMode">上方觀看比例</label><select id="suouViewMode"><option value="wide">16:9 橫式完整畫面</option><option value="vertical">9:16 直式影片</option><option value="auto">自適應視窗高度</option></select><button type="button" id="suouViewerFullscreen">上方觀看區全螢幕</button><button type="button" id="suouViewerExit" hidden>退出全螢幕</button></div><p class="viewer-message" id="suouViewerMessage" role="status">嵌入網站支援時才會顯示畫面；錄影請選來源分頁，不能把本預覽誤當成來源播放器。</p><div class="viewer" id="suouViewer" data-view-mode="wide"><iframe id="frame" title="影片網站" referrerpolicy="strict-origin-when-cross-origin" allow="autoplay; fullscreen; picture-in-picture"></iframe></div><p class="hint">如畫面空白、拒絕連線或要求登入，表示網站可能禁止內嵌。請按「在新分頁開啟」，仍可在錄影時選擇該分頁；本工具不會繞過網站的存取限制。</p></section>
+<div class="grid desktop-section"><section class="panel"><h2>02 ｜ 錄製設定</h2><div class="settings"><label class="check"><input type="checkbox" id="audio" checked> 收錄影片聲音</label><label class="check"><input type="checkbox" id="quiet" checked> 開始時要求靜音來源分頁（瀏覽器支援時）</label><div class="capture-modes" style="width:100%;padding:12px;border:1px solid #45658d;border-radius:10px;background:#101c30"><strong>錄影來源模式（瀏覽器仍會要求你手動選擇來源）</strong><div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:10px"><label><input type="radio" name="captureMode" value="browser" checked> Chrome 分頁（建議自動換集）</label><label><input type="radio" name="captureMode" value="window"> 指定視窗</label><label><input type="radio" name="captureMode" value="monitor"> 整個螢幕</label></div><div id="captureModeHelp" style="margin-top:9px;color:#aebbd1">選擇 Chrome 分頁後，請於 Chrome 分享視窗選定播放中的影片分頁並勾選分頁音訊。</div><div id="actualCapture" role="status" style="margin-top:8px;color:#a6e1ff">實際分享來源：尚未開始</div></div><label class="check"><input type="checkbox" id="autoSave" checked> 錄完自動下載</label><label class="check"><input type="checkbox" id="timedStop"> 到指定時間自動停止</label><label class="check">分鐘 <input id="stopMinutes" type="number" min="1" max="360" value="25" style="width:76px;background:#0c1425;color:white;border:1px solid #32405c;border-radius:7px;padding:7px"></label><label class="check"><input type="checkbox" id="smartStop"> 實驗：偵測畫面靜止＋音訊安靜後停止（預設關閉）</label><label class="check">安靜秒數 <select id="idleSeconds" style="background:#0c1425;color:white;padding:7px;border:1px solid #32405c;border-radius:7px"><option value="45">45</option><option value="90" selected>90</option><option value="180">180</option></select></label><label class="check"><input type="checkbox" id="autoFull"> 進階：放大錄影器預覽（不是影片全螢幕；可能造成凍結，預設關閉）</label></div><p class="hint">錄製整個螢幕時，請在分享視窗選擇「整個螢幕」。這會錄入所有顯示內容（包括通知與其他視窗），音訊支援情況依瀏覽器與系統而異。錄影中的「喇叭開／關」控制本工具的獨立音訊監聽，不影響錄影收音；若來源網站自身已經在喇叭播放，本工具不能替其他分頁強制靜音。建議選「Chrome 分頁」並勾選「分享分頁音訊」。</p><div class="note" id="fullGuide" role="note"><strong>真正全螢幕錄製的正確步驟（Windows Chrome／Edge）</strong><ol class="steps"><li>勾選「擷取整個螢幕」，按「開始錄影」。</li><li>在瀏覽器分享視窗選「整個螢幕」並按「分享」；瀏覽器不允許本工具代替你授權。</li><li>切到播放影片的來源分頁，按播放器右下角「⛶ 全螢幕」；如果播放器沒有按鍵，可試 F11 隱藏瀏覽器工具列（不是同一種影片全螢幕）。</li><li>讓來源影片保持在前景連續播放，不要切回錄影器的全螢幕預覽。</li><li>影片播完按 Esc／F11 退出全螢幕，回錄影器停止，或先用瀏覽器共享控制結束擷取。</li></ol><small>注意：整個螢幕分享不一定能收錄系統音訊。若必須保留聲音，可改選「Chrome 分頁」並勾選「分享分頁音訊」，再使用來源影片播放器的全螢幕鍵；實際輸出範圍依瀏覽器擷取模式而定。網站若不提供全螢幕能力，錄影器不能繞過限制。</small></div><p class="hint">自動停止：分享來源結束時直接存檔；定時停止較可靠。實驗性片尾偵測須同時取得音訊和連續影格，可能誤判靜態／無聲片段，也可能因背景分頁節流而無效。錄影時保持來源分頁在前景，請先短片測試。<span id="endDetectStatus" role="status">尚未啟動結束偵測。</span></p><div class="toolbar"><label for="name">檔案名稱</label><input type="text" id="name" value="SUOU-recording" maxlength="120"></div><div class="note" id="audioGuardPanel" style="margin:12px 0;border:1px solid #377d83;padding:14px;border-radius:12px;background:#10252b"><strong>音訊安全監控 · Audio Guard v4.4.4</strong><div style="margin-top:8px;display:flex;gap:12px;flex-wrap:wrap;align-items:center"><span id="guardState" role="status" aria-live="polite">尚未檢查音訊</span><meter id="guardMeter" min="0" max="100" value="0" style="width:210px;height:22px"></meter><span id="guardLevel">0%</span></div><p id="guardWarning" role="alert" style="color:#ffcd83;margin:8px 0">錄影前請確認分享分頁音訊。建議先按「5 秒試錄」並回放。</p><div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center"><button type="button" id="guardTest">▶ 5 秒試錄音訊</button><label class="check"><input type="checkbox" id="guardSilent">允許無聲錄影（預設關閉）</label></div><video id="guardTestPlayback" controls playsinline style="width:min(100%,450px);max-height:230px;margin-top:8px;display:none" aria-label="試錄回放"></video><small>試錄會再次顯示瀏覽器的分享授權；試錄與正式錄影須分別授權。音量表與無聲警告只作提示，不能保證音檔內容。</small></div><div class="rec"><button id="start" class="primary">● 開始錄影</button><button id="stop" class="danger" disabled>■ 停止錄影</button><button id="full" disabled>⛶ 錄影預覽放大（非來源全螢幕）</button><button id="fullHelp" type="button">如何錄成真正全螢幕？</button><button id="soundToggle" disabled>喇叭：切換中</button><span class="dot" id="dot"></span><span class="time" id="clock">00:00:00</span></div><div id="status" class="state" role="status" aria-live="polite">準備就緒。錄製前請先打開要觀看的網頁。</div><p class="hint">如勾「擷取整個螢幕」，分享時請選「整個螢幕」；然後必須在來源影片頁手動開啟播放器全螢幕。否則建議選「Chrome 分頁」錄製來源影片。<strong>分享成功後，請切到來源影片分頁讓影片保持在前景播放，切勿把本工具的預覽當作來源影片播放。</strong>；需要聲音時請勾選「分享分頁音訊」。如選擇其他視窗或整個螢幕，能否收錄聲音由瀏覽器決定。</p></section>
+<section class="panel desktop-section" style="border-color:#346c8d"><h2>錄影來源固定＋防誤觸＋自動換集｜需另裝擴充功能</h2><p class="hint">安裝相容的 SUOU Chrome 擴充功能後，在<strong>JAVDAY／黃果 AI 影片分頁</strong>按擴充功能圖示，選「指定此分頁為影片來源」。回錄影器按開始錄影，擴充功能會保存起始標題與網址。換片後標題與網址穩定變更約 2 秒，將上一段下載並自動開始錄製下一段，畫面分享不中斷。錄影過程來源分頁需維持開啟。</p><div class="toolbar"><label class="check"><input id="tabWatch" type="checkbox" checked> 啟用影片標題＋網址雙條件自動分檔</label><label class="check"><input id="titleOnly" type="checkbox"> 允許僅標題更換（較易誤判，延遲 3 秒）</label></div><div class="toolbar"><label class="check"><input id="continuous" type="checkbox" checked> 連續錄製（換片自動下載並開始下一段）</label><span id="segmentCount" class="pill">已完成 0 段</span></div><div class="note" style="border-color:#4a8d88;margin:10px 0"><strong>連續全集錄製模式（新增）</strong><div class="settings" style="margin-top:8px;flex-direction:column;gap:7px"><label class="check"><input id="singleFile" type="checkbox" checked> EP1～最後一集合成同一段錄影，只在最後一集結束時存一次</label><label class="check"><input id="diskStream" type="checkbox" checked> 建議：直接串流寫入 Windows 檔案（開始時選擇一次檔名，最後才完成檔案）</label></div><p class="hint" id="singleFileHint">選擇「整季單檔」時，中途不再下載；來源分頁切集的等待畫面也會保留在同一影片。Chrome／Edge 可用直接寫檔避免長片記憶體耗盡。關閉直接寫檔將於最後才下載，但超長錄影可能因記憶體不足失敗。請勿中途關閉 Recorder 分頁或停止分享。</p><p id="diskWriteState" class="hint" role="status">尚未選取輸出檔案。</p></div><div class="toolbar"><span id="monitorLink" class="pill">尚未偵測擴充功能</span><span id="monitorTarget" class="sub">來源分頁：未指定</span></div><p class="hint">請先關閉「智慧片尾偵測」避免提前結束；本功能只在真正連上擴充功能後啟動。錄影期間應選「Chrome 分頁」擷取原播放來源（不要選整個螢幕），之後切換到其他視窗不會把其他視窗錄進去；來源在背景可能被瀏覽器節流。最後一集必須在來源頁面板填入已確認的最後 EP，否則停止狀態無法確定。若要錄製完整片尾，建議先測 30 秒確認換檔時序。本版擴充功能 v4.4.6.6 支援 recoder.sudoz.workers.dev、*.pages.dev 與 localhost。若未偵測到擴充功能，請檢查是否安裝並重新整理本頁。</p></section>
+<section class="panel"><h2>03 ｜ 錄影預覽與保存</h2><video id="preview" controls playsinline preload="metadata"></video><p id="previewHealth" class="hint" role="status" aria-live="polite">錄影完成後可在此檢查畫面是否正常前進。</p><div class="toolbar" style="margin-top:12px"><button class="primary" id="save" disabled>下載影片檔</button><span id="details" class="sub">目前沒有錄影</span></div><div class="trim-wrap" id="trimEditor">
+<h2>剪接已錄製影片｜擷取指定時間範圍</h2>
+<p class="hint">錄影結束後可直接使用上方預覽檔，或匯入自己有權編輯的 MP4／WebM。拖動播放進度選取開始、結束時間；輸出為新 WebM，原檔不變。剪接需即時重新編碼，請保持此頁開啟。</p>
+<div class="toolbar"><button id="trimUseRecorded" type="button">使用上方錄影</button><label class="check" for="trimFile">或匯入影片 <input id="trimFile" type="file" accept="video/mp4,video/webm,video/*"></label></div>
+<p class="hint" id="trimSourceStatus" role="status">尚未載入剪接來源。注意：上方網站畫面不是剪輯素材；請先錄影完成後按「使用上方錄影」，或從電腦選擇 MP4／WebM 檔案。</p>
+<video id="trimPlayer" controls playsinline preload="metadata" style="margin-top:10px" aria-label="剪接預覽"></video>
+
+<div class="visual-trim" id="visualTrim"><h3 style="margin:0 0 8px">視覺化剪輯時間軸 · v4.4.2</h3>
+<p class="hint">點縮圖定位播放游標，拖曳 A／B 保留區間；可直接預覽、循環檢查剪接點。縮圖從本機影片產生，不會上傳。</p>
+<div class="filmstrip" id="filmstrip" aria-label="影格縮圖時間軸"><span class="no-thumbs">匯入影片後自動產生時間軸縮圖</span></div>
+<div class="filmstrip-indicators"><div class="selected-band" id="selectedBand"></div><div class="needle" id="timelineNeedle"></div></div>
+<div class="timebar"><span>00:00</span><span id="playheadLabel">播放位置 --:--</span><span id="durationLabel">--:--</span></div>
+<label class="range-label" for="timelinePlayhead">播放游標</label><input type="range" id="timelinePlayhead" min="0" max="100" step="0.05" value="0" disabled>
+<div class="range-row"><div><label class="range-label" for="timelineA">A 起點 <strong id="timelineALabel">--:--</strong></label><input type="range" id="timelineA" min="0" max="100" step="0.05" value="0" disabled></div><div><label class="range-label" for="timelineB">B 終點 <strong id="timelineBLabel">--:--</strong></label><input type="range" id="timelineB" min="0" max="100" step="0.05" value="100" disabled></div></div>
+<div class="frame-actions"><button id="visualSetA" type="button">目前畫面設 A</button><button id="visualSetB" type="button">目前畫面設 B</button><button id="visualStepBack" type="button">◀ 退 0.1 秒</button><button id="visualStepForward" type="button">進 0.1 秒 ▶</button><label class="check"><input id="visualLoop" type="checkbox"> A–B 循環預覽</label><button id="visualPreview" type="button">▶ 播放 A–B</button></div>
+<div class="toolbar"><button type="button" id="timelineRetry">重新讀取影片資訊／縮圖</button></div><p id="thumbStatus" class="hint" role="status">尚未取得影片長度。請先在上方按「使用上方錄影」或匯入檔案。</p></div>
+<div class="trim-grid" style="margin-top:14px"><label>開始時間（秒）<input id="trimStart" type="number" min="0" step="0.1" value="0"></label><label>結束時間（秒）<input id="trimEnd" type="number" min="0" step="0.1" value="0"></label></div>
+<div class="toolbar" style="margin-top:10px"><button id="trimSetStart" type="button">目前畫面設為起點</button><button id="trimSetEnd" type="button">目前畫面設為終點</button><button id="trimPlaySelection" type="button">播放選取片段</button></div>
+<div class="cut-panel" style="padding:12px;border:1px solid #37506c;border-radius:12px;margin:12px 0;background:#111d30">
+<h3 style="margin:0 0 8px">移除不要的片段（可標記多段）</h3>
+<p class="hint">先拖曳 A、B 或將目前畫面設為 A／B，再按「加入刪除區間」。可以重複選取廣告、片頭、片尾；匯出時只保留剩餘部分，原始影片不會被更動。</p>
+<div class="toolbar"><button id="addCut" type="button">＋ 刪除 A～B 區間</button><button id="clearCuts" type="button">清空刪除清單</button></div>
+<div id="cutList" class="hint" aria-live="polite">尚無刪除區間；直接輸出將保留 A～B 單段。</div>
+<label class="check" style="margin-top:8px"><input type="checkbox" id="useCuts" checked> 匯出時套用刪除清單（自動保留其他部分）</label>
+</div>
+<section id="fastTrimPanel" style="margin:14px 0;padding:14px;border:1px solid #42748d;border-radius:12px;background:#102437">
+<h3 style="margin:0 0 8px">快速無損掐頭去尾 · v4.4.2</h3>
+<p class="hint">使用上方同一組 A 起點／B 終點及視覺化時間軸。以 FFmpeg 串流複製（-c copy）移除片頭片尾，不重新壓縮影像或聲音。剪輯點會依關鍵影格調整，無法保證精確到每格。僅保留單一 A～B 區間；若需要刪除中間多段，請使用下方原有的精準剪輯。</p>
+<div class="toolbar"><button class="primary" type="button" id="fastTrimGo">快速無損剪裁 A～B</button><p class="hint" style="margin-top:12px"><strong>大檔案（超過 900 MB）：</strong>瀏覽器版為避免記憶體不足會拒絕處理。請使用 <a href="./SUOU-Windows-FastTrim-v4.4.2.zip" download style="color:#a8d4ff">下載 Windows FFmpeg 無損快速剪裁工具 ZIP</a>。無須上傳影片，原檔保留；可處理一般大型 MP4／WebM。網站禁止 iframe 嵌入時請在獨立分頁觀看。</p><button type="button" id="fastTrimStop" disabled>取消處理</button><span id="fastTrimEngine" class="sub">首次使用需下載 FFmpeg 引擎（需要網路）</span></div>
+<progress id="fastTrimProgress" value="0" max="100" style="width:100%"></progress>
+<p id="fastTrimStatus" role="status" aria-live="polite" class="hint">請先匯入本機影片，或使用上方已完成的錄影。</p>
+<div id="fastTrimResult" hidden><video id="fastTrimPreview" controls playsinline style="width:100%;max-height:280px;margin-top:8px"></video><div class="toolbar"><button id="fastTrimDownload" type="button" class="primary">下載無損剪裁檔</button><span id="fastTrimInfo" class="sub"></span></div></div>
+<p class="hint">限制：瀏覽器需能下載第三方 FFmpeg WebAssembly 程式，離線或網路阻擋時無法啟用；大型影片可能因瀏覽器記憶體不足而失敗。輸出容器依原檔為 MP4／WebM；輸入的編碼、容器與播放器相容性仍須確認。單純刪掉片頭與片尾不會修復檔案本身的 Infinity 時長／封裝損壞問題。</p>
+</section>
+<div class="toolbar"><button id="trimExport" class="primary" type="button" disabled>剪接並輸出 WebM</button><button id="trimCancel" type="button" disabled>取消輸出</button><span id="trimRange" class="sub">尚未選擇來源</span></div>
+<progress id="trimProgress" max="100" value="0" aria-label="剪接進度"></progress><p id="trimStatus" role="status" class="hint" aria-live="polite">等待載入影片。</p>
+<div class="trim-result" id="trimResult" hidden><h2>剪接完成</h2><video id="trimOutputPreview" controls playsinline preload="metadata"></video><div class="toolbar"><button id="trimDownload" class="primary" type="button">下載剪接影片</button><span id="trimResultInfo" class="sub"></span></div></div>
+<p class="hint">注意：可刪除多段後合併保留區間，但瀏覽器切換區間時可能出現少量音畫間隙；非無損影格精切；瀏覽器會重新編碼成 WebM，可能略有畫質差異。編碼期間切換到背景可能變慢。若匯入的 MP4 編碼格式不受瀏覽器支援，請改用 Chrome 可播放的影片或原本錄影的 WebM。</p>
+</div><p class="hint">Chrome / Edge 通常輸出 WebM。若預覽卡在第一張畫面，先下載並用 VLC 等播放器確認實際檔案；錄影計時與檔案容量不代表影格持續更新。建議先測試 30 秒並確認影片畫面會變動，再錄長片。</p></section></div>
+<section class="panel desktop-section"><h2>使用步驟</h2><ol class="steps"><li>先確認網址正確，再按「在新分頁開啟」找到要錄製的影片。</li><li>返回本工具，按「開始錄影」，在跳出的授權視窗選擇播放中的網頁分頁。</li><li>如果需要錄到影片聲音，勾選瀏覽器提供的「分享分頁音訊」選項，再按「分享」。</li><li>切換至來源影片分頁並保持它在前景播放。不要把錄影器的擷取預覽放大來取代原影片分頁；這可能令來源頁面暫停或降低更新頻率。錄好後回本工具按「停止錄影」。</li><li>下方可立即預覽，勾選自動下載即可在錄製停止後嘗試儲存；若瀏覽器阻擋自動下載，仍可按「下載影片檔」。</li></ol><div class="note">注意：需要 HTTPS 或 localhost 才能使用螢幕擷取功能。iPhone / iPad 的 Safari 一般不支援此網頁錄製流程，可改用 iOS 系統內建螢幕錄影，再從照片 App 保存。受保護或限制錄製的內容可能顯示黑畫面或沒有聲音。請尊重影片著作權及網站使用規則。</div></section><footer>SUOU Video Recorder v4.4.6.7 — Audio Guard + Episode Bridge · 錄影在你的瀏覽器本機完成，工具不會把影像上傳伺服器。</footer></main><div id="fullLayer" class="fullscreen-capture" aria-label="錄製畫面全螢幕預覽"><video id="livePreview" autoplay playsinline muted></video><div class="full-controls"><span class="dot" id="fullDot"></span><span class="time" id="fullClock">00:00:00</span><button id="soundToggleFull" disabled>喇叭：切換中</button><button id="exitFull">退出預覽</button><button class="danger" id="stopFull">■ 停止錄影</button></div></div>
+<script>
+(()=>{'use strict';
+const $=id=>document.getElementById(id);
+const DEFAULT_SITE='https://huangguoai.com/';
+const SITE_STORAGE='suou-video-recorder-site-v1';
+function validSite(raw){try{const u=new URL(raw.trim());return ['https:','http:'].includes(u.protocol)?u.href:null}catch{return null}}
+try{const stored=validSite(localStorage.getItem(SITE_STORAGE)||'');if(stored)$('url').value=stored}catch{}
+let audioTrack=null, speakerSuppressed=false, speakerBusy=false, monitorContext=null, monitorGain=null, monitorSource=null, monitorEnabled=false;
+let guardContext=null,guardAnalyser=null,guardSource=null,guardTick=null,guardTrack=null,guardSeenSignal=false,guardLastSignal=0,guardLastWarning=0,guardTestURL=null,guardTesting=false;
+const guardState=s=>$('guardState').textContent=s;
+const guardWarning=s=>$('guardWarning').textContent=s;
+function stopAudioGuard(){if(guardTick){clearInterval(guardTick);guardTick=null}try{guardSource?.disconnect()}catch{}guardSource=null;guardAnalyser=null;guardTrack=null;if(guardContext){const c=guardContext;guardContext=null;c.close().catch(()=>{})}$('guardMeter').value=0;$('guardLevel').textContent='0%'}
+async function startAudioGuard(t){stopAudioGuard();guardSeenSignal=false;guardLastSignal=Date.now();guardLastWarning=0;guardTrack=t;
+ if(!t){guardState('未取得音軌');guardWarning('沒有擷取到音軌；請重新分享分頁並啟用分頁音訊。');return}
+ guardState('已取得音軌，正在觀察音量');guardWarning('請播放來源影片，確認音量條有跳動。');
+ t.addEventListener('ended',()=>{if(guardTrack===t){guardState('音軌已中斷');guardWarning('警告：擷取音軌已結束！請停止並檢查錄影。')}},{once:true});
+ try{const AC=window.AudioContext||window.webkitAudioContext;if(!AC)throw Error('AudioContext 不支援');guardContext=new AC();guardSource=guardContext.createMediaStreamSource(new MediaStream([t]));guardAnalyser=guardContext.createAnalyser();guardAnalyser.fftSize=2048;guardSource.connect(guardAnalyser);await guardContext.resume();
+ const data=new Float32Array(guardAnalyser.fftSize);
+ guardTick=setInterval(()=>{if(!guardAnalyser||guardTrack!==t)return;guardAnalyser.getFloatTimeDomainData(data);let sum=0;for(const v of data)sum+=v*v;const rms=Math.sqrt(sum/data.length);const level=Math.min(100,Math.round(rms*500));$('guardMeter').value=level;$('guardLevel').textContent=level+'%';const now=Date.now();if(rms>0.002){guardSeenSignal=true;guardLastSignal=now;guardState('已取得音軌 · 有音量訊號');guardWarning('錄音訊號正常；建議完成試錄回放確認。')}else if(now-guardLastSignal>10000&&now-guardLastWarning>10000){guardLastWarning=now;guardState('已取得音軌 · 偵測到持續安靜');guardWarning(guardSeenSignal?'已連續約 10 秒沒有音量訊號，請確認來源影片仍在播放。':'音軌存在但未偵測到音量，請先播放來源影片或進行試錄。')}} ,450);
+ }catch(e){guardState('音軌存在（音量監控不可用）');guardWarning('無法啟動音量分析：'+e.message+'；請用 5 秒試錄確認。')}
+}
+async function captureGuardStream(){const wanted=document.querySelector('input[name="captureMode"]:checked')?.value||'browser';return navigator.mediaDevices.getDisplayMedia({video:{frameRate:30,displaySurface:wanted},audio:true,systemAudio:'include',surfaceSwitching:'include'})}
+$('guardTest').onclick=async()=>{if(guardTesting||recorder?.state==='recording')return;guardTesting=true;$('guardTest').disabled=true;let s=null;let r=null;
+ try{guardState('等待選擇試錄分頁');s=await captureGuardStream();const t=s.getAudioTracks()[0];if(!t)throw Error('試錄未取得音軌。請選分頁並啟用「分享分頁音訊」。');await startAudioGuard(t);
+ const type=['video/webm;codecs=vp8,opus','video/webm;codecs=vp9,opus','video/webm','video/mp4'].find(x=>MediaRecorder.isTypeSupported(x));if(!type)throw Error('瀏覽器未提供可用錄影格式');const parts=[];r=new MediaRecorder(s,{mimeType:type});r.ondataavailable=e=>{if(e.data?.size)parts.push(e.data)};
+ await new Promise((resolve,reject)=>{r.onerror=e=>reject(e.error||Error('試錄失敗'));r.onstop=resolve;r.start(500);guardState('正在試錄 5 秒，請讓來源影片有聲播放');setTimeout(()=>{if(r.state!=='inactive')r.stop()},5000)});
+ const b=new Blob(parts,{type});if(!b.size)throw Error('試錄檔為空');if(guardTestURL)URL.revokeObjectURL(guardTestURL);guardTestURL=URL.createObjectURL(b);const p=$('guardTestPlayback');p.src=guardTestURL;p.style.display='block';p.load();guardState('試錄完成，請按播放檢查音訊');guardWarning('確認這段 5 秒的影片有聲後，再按正式開始錄影。');
+ }catch(e){guardState('試錄未完成');guardWarning(e?.message||String(e))}finally{if(s)s.getTracks().forEach(t=>t.stop());stopAudioGuard();guardTesting=false;$('guardTest').disabled=false}
+};
+let initialName=null,watchSession=null,watchConnected=false;
+let lastEpisodeFinalizeSession=null;
+let segmentNo=0,segmentName="SUOU-recording",segmentStarted=0,segmentBusy=false,stopAllRequested=false,captureEnded=false,mediaMime="",rotationQueue=null;
+let diskWriter=null,diskFileName='',diskWriteQueue=Promise.resolve(),diskWriteError=null,singleFileName='';
+let stream=null,recorder=null,chunks=[],blob=null,blobURL=null,startTime=0,timer=null,extension='webm',monitorTimer=null,lastFrames=0,lastMonitorAt=0,finalizing=false,autoEndTimer=null,autoEndAudioContext=null,autoEndSource=null,autoEndAnalyser=null,autoEndStarted=0,autoEndStableSince=0,autoEndLastPixels=null,autoEndVideo=null,autoEndCanvas=null,autoEndLastSample=0; 
+const supported=!!(navigator.mediaDevices?.getDisplayMedia&&window.MediaRecorder&&window.isSecureContext);
+const status=t=>$('status').textContent=t;
+$('support').textContent=supported?'✓ 此瀏覽器支援錄製':'⚠ 此瀏覽器或來源不支援錄製';$('start').disabled=!supported;
+function siteURL(){const url=validSite($('url').value);if(!url){alert('請輸入有效的 http(s) 網址');return null}try{localStorage.setItem(SITE_STORAGE,url)}catch{}return url}
+$('load').onclick=()=>{let url=siteURL();if(url)$('frame').src=url};
+$('open').onclick=()=>{let url=siteURL();if(url)window.open(url,'_blank','noopener,noreferrer')};$('frame').src=$('url').value;
+
+const WATCH_TOKEN='SUOU_V2_TAB_MONITOR';
+let armSeq=0,armWait=null;const armTrace=[];function armLog(stage,detail={}){armTrace.push({at:new Date().toISOString(),stage,...detail});if(armTrace.length>80)armTrace.shift();console.info('[SUOU Recorder ARM]',stage,detail)}
+window.suouDownloadArmLog=()=>{const a=document.createElement('a'),u=URL.createObjectURL(new Blob([JSON.stringify({recorderUrl:location.href,recording:recorder?.state||'inactive',watchSession,events:armTrace},null,2)],{type:'application/json'}));a.href=u;a.download='SUOU-Recorder-ARM-Diagnostic.json';a.click();setTimeout(()=>URL.revokeObjectURL(u),5000)};
+function bridgeSend(action,data={}){if(action==='ARM')armLog('ARM_SENT',{requestId:data.requestId});window.postMessage({suou:WATCH_TOKEN,direction:'page-to-extension',action,...data},location.origin)}
+window.addEventListener('message',e=>{
+ if(e.source!==window||e.origin!==location.origin)return;
+ const m=e.data;if(!m||m.suou!==WATCH_TOKEN||m.direction!=='extension-to-page')return;
+ if(m.action==='READY'){watchConnected=!!m.ok;$('monitorLink').textContent=m.ok?(m.active?'錄影協作中':'擴充功能已連線')+(m.playerActive?'／影片監控已啟動':(m.autoAdvance?'／自動換集已設定':'／自動換集未啟動')):'擴充功能通訊異常：'+(m.error||'請重新整理');$('monitorTarget').textContent=m.target?.title?'來源分頁：'+m.target.title+' ｜ '+(m.target.url||''):'來源分頁：未指定';return}
+ if(m.action==='TARGET'){if(m.target?.title)$('monitorTarget').textContent='來源分頁：'+m.target.title+' ｜ '+(m.target.url||'');return}
+ if(m.action==='ARM_RECEIVED_BY_BRIDGE'){armLog('BRIDGE_RECEIVED',{requestId:m.requestId});return}
+ if(m.action==='ARMED'){armLog(m.ok?'ARM_ACK':'ARM_FAILED',{requestId:m.requestId,error:m.error||null});if(armWait&&m.requestId===armWait.requestId){clearTimeout(armWait.timeout);armWait=null;}
+  if(!m.ok){watchSession=null;$('monitorLink').textContent='監控未啟動：'+(m.error||'請先在來源頁指定分頁');status('錄影已開始，但自動換集未啟動：'+(m.error||'擴充功能尚未就緒')+'；請勿無人看管連續錄製。');return}
+  watchSession=m.session;$('monitorLink').textContent=m.playerActive?'錄影與換集同步監控中：'+m.title:'錄影工作階段已建立（影片監控未確認）';
+  $('monitorTarget').textContent='來源分頁：'+m.title+' ｜ 起始網址：'+m.url;
+  if(!$('name').dataset.userChanged){$('name').value=m.title||'SUOU-recording'}
+  segmentName=m.title||$('name').value;
+  return;
+ }
+ if(m.action==='END_SESSION'&&watchSession&&m.session===watchSession){lastEpisodeFinalizeSession=watchSession;status('最後一集已播完，正在停止錄影並等待封裝…');stopRecording();return;}
+ if(m.action==='SWITCH'&&watchSession&&m.session===watchSession&&recorder?.state==='recording'&&!segmentBusy&&!finalizing){
+  if($('singleFile').checked){
+   // Recorder stays running across all episodes; release background state for the next EP.
+   bridgeSend('ADVANCE',{session:watchSession,title:m.nextTitle,url:m.nextUrl,episodeNumber:m.episodeNumber});
+   $('monitorLink').textContent='全集單檔錄製中：已切換至 EP'+(m.episodeNumber||'?');
+   status('已確認切換至 EP'+(m.episodeNumber||'?')+'；錄影不間斷，不會現在下載。');
+  }else if($('continuous').checked){rotateSegment(m);}
+  else {if(!$('name').dataset.userChanged)$('name').value=m.oldTitle||$('name').value;stopRecording();}
+ }
+
+});
+$('name').addEventListener('input',()=>{$('name').dataset.userChanged='1'});
+window.addEventListener('pageshow',()=>bridgeSend('HELLO'));
+bridgeSend('HELLO');
+const armDiagButton=document.createElement('button');armDiagButton.type='button';armDiagButton.textContent='匯出 Recorder 啟動診斷';armDiagButton.style.cssText='margin:6px;padding:6px 10px;font-size:12px';armDiagButton.addEventListener('click',()=>window.suouDownloadArmLog());$('monitorLink')?.parentElement?.appendChild(armDiagButton);
+setInterval(()=>bridgeSend('HELLO'),5000);
+setTimeout(()=>{if(!watchConnected){$('monitorLink').textContent='未偵測到擴充功能（檢查 v4.4.6.6 是否啟用及網頁是否重新整理）';$('monitorTarget').textContent='來源分頁：無法取得';}},3500);
+
+function tick(){let s=Math.floor((Date.now()-startTime)/1000);let t=[Math.floor(s/3600),Math.floor(s/60)%60,s%60].map(x=>String(x).padStart(2,'0')).join(':');$('clock').textContent=t;$('fullClock').textContent=t}
+function exitLive(){const layer=$('fullLayer');layer.classList.remove('active');$('livePreview').pause();$('livePreview').srcObject=null;if(document.fullscreenElement===layer)document.exitFullscreen().catch(()=>{})}
+async function releaseAudioMonitor(){
+  monitorEnabled=false;
+  if(monitorGain)monitorGain.gain.value=0;
+  try{monitorSource?.disconnect()}catch{}
+  try{monitorGain?.disconnect()}catch{}
+  const ctx=monitorContext;
+  monitorContext=null;monitorGain=null;monitorSource=null;
+  if(ctx){try{await ctx.close()}catch{}}
+}
+function cleanStream(){stopAudioGuard();bridgeSend('DISARM');watchSession=null;stopAutoEnd();
+  releaseAudioMonitor();audioTrack=null;speakerBusy=false;updateSoundButtons();
+  if(monitorTimer){clearInterval(monitorTimer);monitorTimer=null}
+  exitLive();if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}
+  clearInterval(timer);timer=null;$('start').disabled=!supported;$('stop').disabled=true;
+  $('full').disabled=true;$('dot').classList.remove('live');$('fullDot').classList.remove('live')
+}
+function updateSoundButtons(){
+  const active=!!audioTrack&&recorder?.state==='recording'&&!speakerBusy;
+  for(const id of ['soundToggle','soundToggleFull']){
+    $(id).disabled=!active;
+    $(id).textContent=!audioTrack?'喇叭：無錄影音軌':speakerBusy?'喇叭：切換中':monitorEnabled?'喇叭：開（按此關閉）':'喇叭：關（按此開啟）';
+  }
+}
+async function switchSound(){
+  if(!audioTrack||speakerBusy||recorder?.state!=='recording')return;
+  speakerBusy=true;updateSoundButtons();
+  try{
+    if(!monitorContext){
+      const AC=window.AudioContext||window.webkitAudioContext;
+      if(!AC)throw Error('瀏覽器不支援 AudioContext');
+      monitorContext=new AC({latencyHint:'interactive'});
+      monitorGain=monitorContext.createGain();monitorGain.gain.value=0;
+      monitorSource=monitorContext.createMediaStreamSource(new MediaStream([audioTrack]));
+      monitorSource.connect(monitorGain).connect(monitorContext.destination);
+    }
+    if(!monitorEnabled){
+      await monitorContext.resume();
+      if(monitorContext.state!=='running')throw Error('瀏覽器未允許啟動音訊，請再點一次按鈕');
+      monitorGain.gain.value=1;monitorEnabled=true;
+      status('監聽聲音已開啟，錄製音軌維持不變。若仍無聲，請確認分享時有勾選「分享分頁音訊」、電腦音量未靜音。整個螢幕錄影可能不提供音軌。');
+    }else{
+      monitorGain.gain.value=0;monitorEnabled=false;
+      status('監聽聲音已關閉，錄影仍繼續收音。若來源分頁仍發聲，表示瀏覽器沒有抑制原本的播放，請使用來源網站或系統音量控制。');
+    }
+  }catch(err){status('切換監聽失敗：'+(err.message||err)+'。錄製音軌不受影響。')}
+  finally{speakerBusy=false;updateSoundButtons()}
+}
+$('soundToggle').onclick=switchSound;$('soundToggleFull').onclick=switchSound;
+function clearPrevious(){$('previewHealth').textContent='錄影完成後可在此檢查畫面是否正常前進。';if(blobURL){URL.revokeObjectURL(blobURL);blobURL=null}$('preview').removeAttribute('src');$('preview').load();$('save').disabled=true;$('details').textContent='目前沒有錄影';blob=null;chunks=[]}
+function download(){if(!blob||!blobURL)return;const safe=($('name').value.trim()||'SUOU-recording').replace(/[\\/:*?"<>|]/g,'_');const a=document.createElement('a');a.href=blobURL;a.download=safe+'-'+new Date().toISOString().replace(/[:.]/g,'-')+'.'+extension;document.body.appendChild(a);a.click();a.remove()}
+async function showLive(){if(!stream)return;const layer=$('fullLayer');$('livePreview').srcObject=stream;$('livePreview').muted=true;layer.classList.add('active');try{await $('livePreview').play()}catch{}try{if(!document.fullscreenElement)await layer.requestFullscreen()}catch{status('錄影進行中。瀏覽器未允許自動全螢幕；可按「全螢幕觀看錄製畫面」重試。')}}
+$('full').onclick=showLive;$('exitFull').onclick=exitLive;$('fullHelp').onclick=()=>{$('fullGuide').scrollIntoView({behavior:'smooth',block:'center'});status('請依說明切換到來源影片並使用播放器全螢幕；錄影器不能將其他分頁強制全螢幕。')};
+function stopAutoEnd(){
+ if(autoEndTimer){clearInterval(autoEndTimer);autoEndTimer=null}
+ if(autoEndAudioContext){autoEndAudioContext.close().catch(()=>{});autoEndAudioContext=null}
+ autoEndAnalyser=null;autoEndSource=null;autoEndLastPixels=null;
+ if(autoEndVideo){autoEndVideo.pause();autoEndVideo.srcObject=null;autoEndVideo.remove();autoEndVideo=null}
+ autoEndCanvas=null;autoEndStableSince=0;
+}
+function setEndStatus(t){$('endDetectStatus').textContent=t}
+function beginAutoEnd(){
+ stopAutoEnd();autoEndStarted=Date.now();autoEndLastSample=0;
+ const timed=$('timedStop').checked, smart=$('smartStop').checked;
+ const minutes=Number($('stopMinutes').value);
+ if(timed && (!Number.isFinite(minutes)||minutes<1||minutes>360)){$('timedStop').checked=false;setEndStatus('定時範圍為 1–360 分鐘，已停用定時停止。')}
+ if(smart){
+  try{
+   const atrack=stream?.getAudioTracks()[0];
+   if(!atrack)throw Error('沒有音訊軌道');
+   const AC=window.AudioContext||window.webkitAudioContext;
+   if(!AC)throw Error('瀏覽器不支援音訊分析');
+   autoEndAudioContext=new AC();
+   autoEndSource=autoEndAudioContext.createMediaStreamSource(new MediaStream([atrack]));
+   autoEndAnalyser=autoEndAudioContext.createAnalyser();autoEndAnalyser.fftSize=2048;
+   autoEndSource.connect(autoEndAnalyser); // No connection to destination; recording and speaker unaffected.
+   autoEndVideo=document.createElement('video');autoEndVideo.muted=true;autoEndVideo.playsInline=true;
+   autoEndVideo.style.cssText='position:fixed;width:1px;height:1px;opacity:0;pointer-events:none;left:-100px;top:-100px';
+   autoEndVideo.srcObject=new MediaStream(stream.getVideoTracks());document.body.appendChild(autoEndVideo);
+   autoEndVideo.play().catch(()=>{});
+   autoEndCanvas=document.createElement('canvas');autoEndCanvas.width=64;autoEndCanvas.height=36;
+  }catch(err){$('smartStop').checked=false;setEndStatus('智慧偵測無法啟用：'+err.message)}
+ }
+ if(!$('timedStop').checked&&!$('smartStop').checked){setEndStatus('僅在分享停止或手動按停止時存檔。');return}
+ setEndStatus('自動結束偵測已啟用；分享結束也會自動存檔。');
+ autoEndTimer=setInterval(()=>{
+  if(recorder?.state!=='recording'||finalizing)return;
+  const now=Date.now();
+  if($('timedStop').checked && now-autoEndStarted>=Number($('stopMinutes').value)*60000){setEndStatus('已達設定時間，自動停止存檔。');stopRecording();return}
+  if(!$('smartStop').checked||!autoEndAnalyser||!autoEndVideo||now-autoEndStarted<20000||now-autoEndLastSample<1800)return;
+  autoEndLastSample=now;
+  try{
+   if(autoEndVideo.readyState<2||autoEndAudioContext.state!=='running'){autoEndStableSince=0;setEndStatus('智慧偵測等待可用的影格及音訊（背景分頁可能受限制）。');return}
+   const arr=new Float32Array(autoEndAnalyser.fftSize);autoEndAnalyser.getFloatTimeDomainData(arr);
+   let sum=0;for(let i=0;i<arr.length;i++)sum+=arr[i]*arr[i];const rms=Math.sqrt(sum/arr.length);
+   const ctx=autoEndCanvas.getContext('2d',{willReadFrequently:true});ctx.drawImage(autoEndVideo,0,0,64,36);
+   const pixels=ctx.getImageData(0,0,64,36).data;
+   let diff=Infinity;
+   if(autoEndLastPixels){let total=0;for(let i=0;i<pixels.length;i+=16)total+=Math.abs(pixels[i]-autoEndLastPixels[i])+Math.abs(pixels[i+1]-autoEndLastPixels[i+1])+Math.abs(pixels[i+2]-autoEndLastPixels[i+2]);diff=total/(pixels.length/16*3)}
+   autoEndLastPixels=new Uint8ClampedArray(pixels);
+   const idle=rms<0.0015&&diff<1.0;
+   if(idle){if(!autoEndStableSince)autoEndStableSince=now;const secs=Math.round((now-autoEndStableSince)/1000);setEndStatus('可能已播放完畢：靜音且畫面不變 '+secs+' 秒 / '+$('idleSeconds').value+' 秒');if(secs>=Number($('idleSeconds').value)){setEndStatus('符合實驗性片尾條件，自動停止存檔。');stopRecording()}}
+   else{autoEndStableSince=0;setEndStatus('錄影進行中：仍偵測到畫面變化或音訊。')}
+  }catch(err){autoEndStableSince=0;setEndStatus('無法可靠判讀片尾：'+err.message)}
+ },2000)
+}
+function safeFilename(name){return (name||'SUOU-recording').trim().replace(/[\\/:*?"<>|\x00-\x1f]/g,'_').slice(0,115)||'SUOU-recording'}
+function makeSegmentRecorder(){
+ if(!stream||!stream.active||!stream.getVideoTracks().some(t=>t.readyState==='live'))throw Error('來源畫面分享已結束');
+ const r=new MediaRecorder(stream,{mimeType:mediaMime,videoBitsPerSecond:4500000});
+ recorder=r;chunks=[];segmentStarted=Date.now();
+ r.ondataavailable=e=>{if(!e.data?.size)return;
+  if(diskWriter){const chunk=e.data;diskWriteQueue=diskWriteQueue.then(()=>diskWriter.write(chunk)).catch(err=>{diskWriteError=err;status('寫入磁碟失敗：'+err.message+'；請檢查磁碟空間或權限。');throw err});}
+  else chunks.push(e.data);
+ };
+ r.onerror=e=>{status('錄影錯誤：'+(e.error?.message||'未知錯誤'));stopAllRequested=true};
+ r.onstop=async()=>{
+  const savingToDisk=!!diskWriter;
+  let diskSaved=false;
+  if(savingToDisk){
+   try{await diskWriteQueue;if(diskWriteError)throw diskWriteError;await diskWriter.close();diskSaved=true;}
+   catch(err){status('寫入單一影片檔失敗：'+err.message+'（請檢查磁碟空間與檔案權限）');try{await diskWriter.abort()}catch{}}
+   finally{diskWriter=null}
+  }
+  const data=savingToDisk?new Blob([],{type:r.mimeType}):new Blob(chunks,{type:r.mimeType});chunks=[];
+  if(savingToDisk&&diskSaved){
+   segmentNo=1;$('segmentCount').textContent='已完成 1 個全集檔案';
+   $('details').textContent='已存到 Windows：'+diskFileName;
+   $('diskWriteState').textContent='已完成：'+diskFileName;
+   status('全部錄製完成，已儲存為 '+diskFileName+'；請使用 Windows 檔案總管播放確認聲音。');
+   if(lastEpisodeFinalizeSession){bridgeSend('FINALIZED',{session:lastEpisodeFinalizeSession,ok:true,filename:diskFileName,autoSave:true});lastEpisodeFinalizeSession=null;}
+  }
+  if(data.size){
+    blob=data;extension=r.mimeType.includes('mp4')?'mp4':'webm';
+    if(blobURL)URL.revokeObjectURL(blobURL);
+    blobURL=URL.createObjectURL(blob);$('preview').src=blobURL;$('preview').load();$('save').disabled=false;
+    const clipName=$('singleFile').checked?singleFileName:(safeFilename(segmentName)+'-'+String(segmentNo+1).padStart(3,'0'));
+    const a=document.createElement('a');a.href=blobURL;a.download=clipName+'.'+extension;
+    if($('autoSave').checked){document.body.append(a);a.click();a.remove()}
+    segmentNo++;$('segmentCount').textContent='已完成 '+segmentNo+' 段';
+    $('details').textContent=`第 ${segmentNo} 段 · ${(data.size/1048576).toFixed(1)} MB · ${extension.toUpperCase()}`;
+    status('完成：'+clipName+'.'+extension+($('autoSave').checked?'（已嘗試自動下載）':'（請手動下載）'));
+    if(lastEpisodeFinalizeSession){bridgeSend('FINALIZED',{session:lastEpisodeFinalizeSession,ok:true,filename:clipName+'.'+extension,autoSave:$('autoSave').checked});lastEpisodeFinalizeSession=null;}
+  }
+  if(!data.size&&!diskSaved&&lastEpisodeFinalizeSession){bridgeSend('FINALIZED',{session:lastEpisodeFinalizeSession,ok:false,error:'檔案大小為 0'});lastEpisodeFinalizeSession=null;}
+  if(!stopAllRequested&&!captureEnded&&rotationQueue&&stream?.active){
+   const next=rotationQueue;rotationQueue=null;
+   try{
+    segmentName=next.nextTitle||'SUOU-recording';$('name').value=segmentName;delete $('name').dataset.userChanged;
+    makeSegmentRecorder();recorder.start(1000);segmentBusy=false;
+    startTime=Date.now();tick();
+    bridgeSend('ADVANCE',{session:watchSession,title:next.nextTitle,url:next.nextUrl});
+    $('monitorLink').textContent='連續錄製中：'+segmentName;
+    status('已自動開始下一部：'+segmentName+'；分享畫面持續有效。');
+   }catch(e){status('下一段啟動失敗：'+e.message);stopRecording()}
+  }else{
+    segmentBusy=false;finalizing=false;stopAutoEnd();bridgeSend('DISARM');watchSession=null;
+    cleanStream();$('stop').disabled=true;$('stopFull').disabled=true;$('start').disabled=false;
+    if(!diskSaved&&savingToDisk)status('全集檔案未能完成寫入，請檢查磁碟剩餘空間及錯誤訊息；勿將此視為成功存檔。');else if(!diskSaved)status('錄影已結束。完成 '+segmentNo+' 個檔案；請檢查下載資料夾。');
+  }
+ };
+ return r;
+}
+function rotateSegment(m){
+ if(segmentBusy||finalizing||!recorder||recorder.state!=='recording')return;
+ segmentBusy=true;rotationQueue=m;
+ // Preserve the old title for this segment, switch to next title only once the next recorder starts.
+ segmentName=m.oldTitle||segmentName;
+ $('monitorLink').textContent='換片，正在封裝：'+segmentName;
+ try{recorder.requestData()}catch{}
+ try{recorder.stop()}catch(e){segmentBusy=false;rotationQueue=null;status('分檔失敗：'+e.message)}
+}
+function stopRecording(){
+ stopAllRequested=true;rotationQueue=null;
+ if(!lastEpisodeFinalizeSession){bridgeSend('DISARM');watchSession=null;}
+ if(recorder?.state==='recording'&&!finalizing){
+  stopAutoEnd();finalizing=true;segmentBusy=true;
+  status($('singleFile').checked?'正在完成全集單一影片檔，請勿關閉頁面。':'正在封裝最後一段影片，請勿關閉頁面。');
+  $('stop').disabled=true;$('stopFull').disabled=true;
+  try{recorder.requestData()}catch{}
+  recorder.stop();
+ }else if(!finalizing&&!segmentBusy)cleanStream();
+}
+$('diskStream').addEventListener('change',()=>{$('diskWriteState').textContent=$('diskStream').checked?'開始錄影時會要求選擇一次檔案路徑':'最後才下載；長片記憶體不足風險較高';});
+$('singleFile').addEventListener('change',()=>{$('diskStream').disabled=!$('singleFile').checked;$('singleFileHint').textContent=$('singleFile').checked?'全集不中斷錄製，最後一集結束才保存一次；若啟用直接寫入，開始前先選擇檔名。':'舊版模式：每集結束自動分檔下載。';});
+$('stop').onclick=stopRecording;$('stopFull').onclick=stopRecording;$('save').onclick=download;
+$('start').onclick=async()=>{if(recorder?.state==='recording')return;finalizing=false;lastEpisodeFinalizeSession=null;clearPrevious();$('start').disabled=true;try{
+  diskWriter=null;diskFileName='';diskWriteError=null;diskWriteQueue=Promise.resolve();
+  singleFileName=safeFilename($('name').value||'SUOU-全集錄影');
+  if($('singleFile').checked&&$('diskStream').checked){
+   if(!window.showSaveFilePicker)throw Error('目前瀏覽器不支援直接寫入磁碟，請取消勾選「直接串流寫入」；注意長片可能超出記憶體。');
+   const fileHandle=await window.showSaveFilePicker({suggestedName:singleFileName+'.webm',types:[{description:'WebM 影片',accept:{'video/webm':['.webm']}}]});
+   diskFileName=fileHandle.name;
+   diskWriter=await fileHandle.createWritable();
+   $('diskWriteState').textContent='已開啟單檔寫入：'+diskFileName+'（直到結束才完成檔案）';
+  }
+  // Audio is captured separately from audio playback. Suppression is a browser hint, not an enforceable mute.
+  if($('singleFile').checked&&$('timedStop').checked)throw Error('全集單檔模式請先關閉「到指定時間自動停止」，避免途中截斷。');
+  const wantsAudio=$('audio').checked;
+  const audioConfig=wantsAudio?($('quiet').checked?{suppressLocalAudioPlayback:true}:true):false;
+  const selectedMode=document.querySelector('input[name="captureMode"]:checked')?.value||'browser';
+  const whole=selectedMode==='monitor';
+  stream=await navigator.mediaDevices.getDisplayMedia({video:{frameRate:30,displaySurface:selectedMode},audio:audioConfig,systemAudio:'include',surfaceSwitching:'include',monitorTypeSurfaces:whole?'include':'exclude'});
+  audioTrack=stream.getAudioTracks()[0]||null; speakerSuppressed=Boolean(audioTrack?.getSettings?.().suppressLocalAudioPlayback);monitorEnabled=false;updateSoundButtons();
+  if(wantsAudio&&!audioTrack&&!$('guardSilent').checked){
+    guardState('錄影已攔截：無音訊軌道');guardWarning('沒有收到分頁音訊，請重新開始並勾選分享分頁音訊。若確實要無聲錄影，先勾選「允許無聲錄影」。');
+    throw Error('未取得音訊軌道，已阻止無聲錄影；請勾選「分享分頁音訊」後重試。');
+  }
+  if(audioTrack)await startAudioGuard(audioTrack);else{stopAudioGuard();guardState('無音訊軌道（使用者允許無聲）')}
+  const tracks=stream.getVideoTracks();if(!tracks.length)throw Error('沒有選擇可錄製的畫面');
+  const types=['video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm','video/mp4'];
+  const type=types.find(t=>MediaRecorder.isTypeSupported(t));if(!type)throw Error('找不到可用的錄製格式');
+  if(diskWriter&&type.includes('mp4'))throw Error('單檔串流模式需要 WebM 編碼，但此瀏覽器沒有提供 WebM MediaRecorder。');
+  extension=type.includes('mp4')?'mp4':'webm';
+  mediaMime=type;stopAllRequested=false;captureEnded=false;rotationQueue=null;segmentBusy=false;segmentNo=0;
+  $('segmentCount').textContent='已完成 0 段';segmentName=$('name').value||'SUOU-recording';
+  makeSegmentRecorder();
+  tracks[0].addEventListener('ended',()=>{captureEnded=true;if(recorder?.state==='recording')stopRecording()},{once:true});
+  recorder.start(1000);if($('tabWatch').checked){(()=>{const requestId='arm-'+Date.now()+'-'+(++armSeq);bridgeSend('ARM',{requestId,titleOnly:$('titleOnly').checked});armWait={requestId,timeout:setTimeout(()=>{if(armWait?.requestId!==requestId)return;armLog('ARM_TIMEOUT',{requestId});armWait=null;$('monitorLink').textContent='ARM 指令逾時：請匯出診斷確認連線';status('自動換集沒有確認啟動，請勿無人看管錄製。');},12000)};})();$('monitorLink').textContent='正在連線擴充功能…'}startTime=Date.now();beginAutoEnd();tick();timer=setInterval(tick,250);$('dot').classList.add('live');$('fullDot').classList.add('live');$('stop').disabled=false;$('stopFull').disabled=false;$('full').disabled=false;
+  const missingAudio=wantsAudio&&stream.getAudioTracks().length===0;updateSoundButtons();
+  const source=tracks[0].getSettings().displaySurface||'unknown';
+  const kindName={browser:'Chrome 分頁',window:'指定視窗',monitor:'整個螢幕',unknown:'無法確認'};
+  $('actualCapture').textContent='實際分享來源：'+(kindName[source]||source);
+  if(selectedMode!==source){status('你選的是「'+(kindName[selectedMode]||selectedMode)+'」，但實際分享「'+(kindName[source]||source)+'」。Chrome 分享視窗的手動選擇優先；若需更換，請停止再開始。');}
+  else if(source!=='browser'&&$('tabWatch').checked){status('正在錄製'+kindName[source]+'。自動換集事件可繼續監控，但分頁來源一致性及聲音可能無法保證，建議使用 Chrome 分頁擷取。');}
+  else status('正在錄製：'+(kindName[source]||source));
+  if('requestVideoFrameCallback' in $('livePreview')){lastFrames=0;lastMonitorAt=Date.now();const probe=()=>{if(!stream)return;lastFrames++;$('livePreview').requestVideoFrameCallback(probe)};$('livePreview').srcObject=stream;$('livePreview').muted=true;$('livePreview').play().catch(()=>{});$('livePreview').requestVideoFrameCallback(probe);monitorTimer=setInterval(()=>{if(!stream||!recorder||recorder.state!=='recording')return;let n=lastFrames;lastFrames=0;if(n===0&&Date.now()-lastMonitorAt>12000)status('提示：本工具的背景預覽沒有回報新畫格（可能受瀏覽器背景節流影響）。請確認來源影片仍在前景播放，先錄 30 秒測試。');else if(n>0)lastMonitorAt=Date.now()},10000)}
+  status('正在錄影。'+(selectedMode==='monitor'?'請切回來源影片分頁並按播放器 ⛶ 全螢幕。整個螢幕分享也會錄到其他畫面與通知。':'請切回來源影片分頁，用播放器的 ⛶ 按鈕進入全螢幕，讓來源保持前景播放。')+(missingAudio?'注意：沒有取得音訊軌道，影片將沒有聲音。':'可按「喇叭開／關」切換獨立監聽聲音，錄製音軌持續保留。若來源分頁仍發聲，表示瀏覽器未抑制來源播放。'));
+  if($('autoFull').checked)await showLive();
+}catch(err){if(diskWriter){try{await diskWriter.abort()}catch{}diskWriter=null;}stopAutoEnd();cleanStream();$('start').disabled=!supported;status(err.name==='NotAllowedError'?'你取消了分享授權，尚未開始錄影。':'無法開始錄製：'+(err.message||err));console.error('[SUOU recorder start]',err)}};
+const preview=$('preview');preview.addEventListener('error',()=>{$('previewHealth').textContent='瀏覽器預覽播放失敗：請下載檔案後使用 VLC 等播放器確認。'});preview.addEventListener('waiting',()=>{$('previewHealth').textContent='預覽正在等待資料。如持續卡住，請下載檔案用其他播放器檢查；這不一定代表錄影檔損壞。'});preview.addEventListener('playing',()=>{$('previewHealth').textContent='預覽正在播放。請檢查畫面與播放時間是否持續前進。'});
+window.addEventListener('beforeunload',e=>{if(recorder?.state==='recording'||finalizing){e.preventDefault();e.returnValue=''}});
+})();
+</script><script>
+(()=>{'use strict';
+const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+if(!isIOS)return;
+document.body.classList.add('is-ios');
+document.querySelectorAll('.desktop-section').forEach(el=>el.hidden=true);
+const mode=document.getElementById('iosMode');mode.hidden=false;
+document.getElementById('support').textContent='iPhone / iPad 系統錄影模式';
+const antiChecks=[...document.querySelectorAll('[data-anti-ad]')];
+const antiKey='suou-recorder-safari-checklist-v14';
+try{const prev=JSON.parse(localStorage.getItem(antiKey)||'{}');antiChecks.forEach(c=>c.checked===false&&(c.checked=!!prev[c.dataset.antiAd]))}catch{}
+function updateAntiChecks(){const done=antiChecks.filter(c=>c.checked).length;document.getElementById('antiAdProgress').textContent=`已完成 ${done} / ${antiChecks.length} 項手動設定（由你自行勾選）`;try{localStorage.setItem(antiKey,JSON.stringify(Object.fromEntries(antiChecks.map(c=>[c.dataset.antiAd,c.checked]))))}catch{}}
+antiChecks.forEach(c=>c.addEventListener('change',updateAntiChecks));updateAntiChecks();
+
+document.querySelector('.sub').textContent='系統錄影教學 · 影片整理 · 本機保存 ｜ v4.4.2';
+const input=document.getElementById('iosFiles'), list=document.getElementById('iosList');
+const DEFAULT_SITE='https://huangguoai.com/', SITE_STORAGE='suou-video-recorder-site-v1';
+const siteInput=document.getElementById('iosSiteURL'), siteLink=document.getElementById('iosOpen'), siteStatus=document.getElementById('iosSiteStatus');
+function validSite(raw){try{const u=new URL(raw.trim());return ['http:','https:'].includes(u.protocol)?u.href:null}catch{return null}}
+function applySite(raw,save){const url=validSite(raw);if(!url){siteStatus.textContent='網址格式不正確，請填入完整 https:// 網址。';return false}siteInput.value=url;siteLink.href=url;if(save){try{localStorage.setItem(SITE_STORAGE,url)}catch{}siteStatus.textContent='已在此裝置儲存常用網址。'}return true}
+try{applySite(localStorage.getItem(SITE_STORAGE)||DEFAULT_SITE,false)}catch{applySite(DEFAULT_SITE,false)}
+siteInput.addEventListener('input',()=>{const url=validSite(siteInput.value);siteLink.href=url||'#';siteStatus.textContent=url?'可按「開啟影片網站」，或先儲存此網址。':'請輸入完整 http(s) 網址。'});
+siteLink.addEventListener('click',event=>{const url=validSite(siteInput.value);if(!url){event.preventDefault();siteStatus.textContent='請先輸入有效的網站網址。';return}applySite(url,true)});
+document.getElementById('iosSaveSite').onclick=()=>applySite(siteInput.value,true);
+document.getElementById('iosResetSite').onclick=()=>applySite(DEFAULT_SITE,true);
+const items=[];
+function human(n){return n>1048576?(n/1048576).toFixed(1)+' MB':(n/1024).toFixed(0)+' KB'}
+function safe(s){return (s||'SUOU-錄影').replace(/[\\/:*?"<>|]/g,'_').trim().slice(0,110)||'SUOU-錄影'}
+function render(){list.replaceChildren();if(!items.length){const p=document.createElement('p');p.className='hint';p.textContent='尚未選取影片。先用系統螢幕錄影，再回到這裡匯入。';list.append(p);return}
+ items.forEach((item)=>{const wrap=document.createElement('article');wrap.className='file-item';
+ const video=document.createElement('video');video.controls=true;video.playsInline=true;video.preload='metadata';video.src=item.url;video.setAttribute('aria-label','影片預覽');
+ const meta=document.createElement('div');meta.className='file-meta';meta.textContent=item.file.name+' · '+human(item.file.size);
+ const name=document.createElement('input');name.type='text';name.maxLength=110;name.value=item.base;name.setAttribute('aria-label','另存檔名');
+ const actions=document.createElement('div');actions.className='toolbar';
+ const save=document.createElement('button');save.textContent='下載／另存';save.className='primary';save.onclick=()=>{const a=document.createElement('a');a.href=item.url;a.download=safe(name.value)+item.ext;document.body.append(a);a.click();a.remove()};
+ const share=document.createElement('button');share.textContent='分享影片';share.onclick=async()=>{try{if(!navigator.share||!navigator.canShare?.({files:[item.file]})){alert('此瀏覽器或檔案大小不支援直接分享，請使用「下載／另存」。');return}await navigator.share({files:[item.file],title:safe(name.value)})}catch(e){if(e.name!=='AbortError')alert('分享失敗：'+e.message)}};
+ const del=document.createElement('button');del.textContent='移除清單';del.onclick=()=>{URL.revokeObjectURL(item.url);items.splice(items.indexOf(item),1);render()};
+ actions.append(save,share,del);wrap.append(meta,video,name,actions);list.append(wrap)})}
+input.addEventListener('change',()=>{for(const file of input.files||[]){if(!file.type.startsWith('video/')&&!/\.(mov|mp4|webm)$/i.test(file.name))continue;const ext=(file.name.match(/\.[^.]+$/)||['.mp4'])[0];items.push({file,ext,base:file.name.slice(0,-ext.length),url:URL.createObjectURL(file)})}input.value='';render()});
+window.addEventListener('pagehide',()=>items.forEach(i=>URL.revokeObjectURL(i.url)));
+})();
+</script>
+<script>
+(() => {
+  const viewer=document.getElementById('suouViewer');
+  const mode=document.getElementById('suouViewMode');
+  const fs=document.getElementById('suouViewerFullscreen');
+  const exit=document.getElementById('suouViewerExit');
+  const msg=document.getElementById('suouViewerMessage');
+  if(!viewer||!mode||!fs||!exit)return;
+  mode.addEventListener('change',()=>{
+    viewer.dataset.viewMode=mode.value;
+    msg.textContent='已調整外框比例。來源網站內的播放器比例由該網站控制；若顯示不完整，請在來源播放器切換「適應畫面」。';
+  });
+  fs.addEventListener('click',async()=>{
+    try{await viewer.requestFullscreen();}
+    catch(e){msg.textContent='瀏覽器未允許全螢幕：請由來源播放器操作全螢幕，或改在新分頁觀看。';}
+  });
+  exit.addEventListener('click',()=>{if(document.fullscreenElement)document.exitFullscreen();});
+  document.addEventListener('fullscreenchange',()=>{
+    const active=document.fullscreenElement===viewer;
+    fs.hidden=active;exit.hidden=!active;
+  });
+})();
+</script>
+<script>
+(()=>{const labels={browser:'選擇 Chrome 分頁後，請於 Chrome 分享視窗選定播放中的影片分頁並勾選分頁音訊。',window:'請在分享視窗切換到「視窗」，選取目標視窗。視窗音訊可能無法錄入；自動換集仍由擴充功能執行。',monitor:'請在分享視窗切換到「整個螢幕」。此模式可能錄到其他視窗／通知，音訊支援因 Chrome／作業系統而異。'};document.querySelectorAll('input[name="captureMode"]').forEach(el=>el.addEventListener('change',()=>{document.getElementById('captureModeHelp').textContent=labels[el.value]}));})();
+</script><script>
+(()=>{'use strict';
+const el=id=>document.getElementById(id);
+const player=el('trimPlayer'),start=el('trimStart'),end=el('trimEnd'),status=el('trimStatus');
+let sourceUrl=null,ownedUrl=null,sourceFile=null,outUrl=null,outputBlob=null,working=false,cancelled=false,playSelection=false;
+let activeVideo=null,activeRecorder=null,activeStream=null,activeAudio=null,activeTimer=null,activeRAF=0;
+let cuts=[];
+let sourceEpoch=0, metadataPoll=null, metadataTimeout=null, timelineReadyEpoch=-1, thumbsReadyEpoch=-1;
+// v4.4.2: MediaRecorder WebM and some fragmented MP4 files report duration=Infinity.
+// Prefer browser metadata; if unavailable, probe a seekable endpoint rather than guessing from file size.
+let durationOverride=NaN, durationProbeActive=false, durationProbeAttempted=-1;
+function validDuration(n){return Number.isFinite(n)&&n>0&&n<1e10}
+function effectiveDuration(){
+ const native=Number(player.duration);
+ if(validDuration(native))return native;
+ return validDuration(durationOverride)?durationOverride:NaN;
+}
+function seekableEnd(v){try{const r=v.seekable;if(!r?.length)return NaN;const last=r.end(r.length-1);return validDuration(last)?last:NaN}catch{return NaN}}
+async function probeInfiniteDuration(epoch=sourceEpoch){
+ if(epoch!==sourceEpoch||durationProbeActive||durationProbeAttempted===epoch||validDuration(effectiveDuration()))return;
+ if(player.readyState<1)return;
+ durationProbeAttempted=epoch;durationProbeActive=true;
+ const original=Number.isFinite(player.currentTime)?player.currentTime:0;
+ const wasPlaying=!player.paused;
+ const direct=seekableEnd(player);
+ if(validDuration(direct)&&!Number.isFinite(player.duration)){
+  // Some servers expose only a partial seekable range, so verify that it is a real end.
+  el('thumbStatus').textContent='片長為 Infinity，正在確認影片結尾…';
+ }
+ try{
+  player.pause();
+  el('thumbStatus').textContent='片長為 Infinity，正在探測影片尾端（最多約 9 秒）…';
+  const result=await new Promise((resolve,reject)=>{
+    let timer;let done=false;
+    function cleanup(){clearTimeout(timer);player.removeEventListener('seeked',finish);player.removeEventListener('durationchange',finish);player.removeEventListener('error',failed)}
+    function finish(){if(done)return;const d=Number(player.duration);const t=Number(player.currentTime);const e=seekableEnd(player);
+      if(validDuration(d)||validDuration(e)||validDuration(t)&&t>1){done=true;cleanup();resolve(validDuration(d)?d:validDuration(e)?e:t)} }
+    function failed(){if(done)return;done=true;cleanup();reject(Error('播放器不支援尾端定位'))}
+    player.addEventListener('seeked',finish);player.addEventListener('durationchange',finish);player.addEventListener('error',failed);
+    timer=setTimeout(()=>{if(done)return;done=true;cleanup();reject(Error('尾端定位逾時'))},9000);
+    try{player.currentTime=1e8;setTimeout(finish,200)}catch(e){failed()}
+  });
+  if(epoch!==sourceEpoch)return;
+  if(validDuration(result)){durationOverride=result;initializeTimeline(epoch);el('thumbStatus').textContent='已探測到片長 '+fmt(result)+'，正在建立剪輯時間軸與縮圖…';}
+ }catch(e){if(epoch===sourceEpoch){el('thumbStatus').textContent='無法從這支影片確認片長（duration=Infinity）：'+e.message+'。建議先用影片工具重新封裝成有完整時長資訊的 MP4／WebM。';say('影片可播放，但剪輯需要可靠的片長；請重新封裝來源影片。')}}
+ finally{
+   if(epoch===sourceEpoch){try{player.currentTime=original}catch{};if(wasPlaying)player.play().catch(()=>{});}
+   durationProbeActive=false;
+ }
+}
+
+function clearSourceTimers(){if(metadataPoll){clearInterval(metadataPoll);metadataPoll=null}if(metadataTimeout){clearTimeout(metadataTimeout);metadataTimeout=null}}
+const say=m=>{status.textContent=m};
+const fmt=n=>{n=Number(n)||0;return `${Math.floor(n/60)}:${String(Math.floor(n%60)).padStart(2,'0')}.${String(Math.round((n%1)*10)%10)}`};
+function range(){const a=Number(start.value),b=Number(end.value),d=effectiveDuration();if(!Number.isFinite(d)||d<=0||!Number.isFinite(a)||!Number.isFinite(b)||a<0||b>d+.01||b-a<.15)throw Error('請設定有效時間範圍：結束必須晚於開始至少 0.15 秒，且不可超過片長。');return {a,b,d}}
+function update(){try{const {a,b,d}=range();el('trimRange').textContent=`保留 ${fmt(a)} – ${fmt(b)}｜長度 ${fmt(b-a)}／原片 ${fmt(d)}`;el('trimExport').disabled=working||!sourceUrl;}catch{el('trimRange').textContent=cuts.length?'已設定刪除區間，將保留剩餘影片':'請設定有效開始／結束時間';el('trimExport').disabled=working||!sourceUrl||!(cuts.length&&el('useCuts').checked)}}
+function mergeCuts(){const sorted=cuts.slice().sort((x,y)=>x.a-y.a);const m=[];for(const c of sorted){if(m.length&&c.a<=m[m.length-1].b+.01)m[m.length-1].b=Math.max(m[m.length-1].b,c.b);else m.push({...c})}return m}
+function keepSegments(d){if(!el('useCuts').checked||!cuts.length){const r=range();return [{a:r.a,b:r.b}]}let cursor=0,keep=[];for(const c of mergeCuts()){if(c.a>cursor+.15)keep.push({a:cursor,b:c.a});cursor=Math.max(cursor,c.b)}if(d>cursor+.15)keep.push({a:cursor,b:d});return keep}
+function drawCuts(){const box=el('cutList');box.replaceChildren();if(!cuts.length){box.textContent='尚無刪除區間；直接輸出將保留 A～B 單段。';update();return}mergeCuts().forEach((c,i)=>{const row=document.createElement('div');row.style.cssText='display:flex;align-items:center;gap:10px;justify-content:space-between;margin:6px 0';const span=document.createElement('span');span.textContent=`移除 ${i+1}：${fmt(c.a)} ～ ${fmt(c.b)}`;const btn=document.createElement('button');btn.type='button';btn.textContent='移除標記';btn.onclick=()=>{cuts=mergeCuts().filter((_,j)=>j!==i);drawCuts()};row.append(span,btn);box.append(row)});update()}
+el('addCut').onclick=()=>{try{const r=range();cuts.push({a:r.a,b:r.b});cuts=mergeCuts();drawCuts();say(`已標記刪除 ${fmt(r.a)}～${fmt(r.b)}；可繼續選下一段。`)}catch(e){say(e.message)}};
+el('clearCuts').onclick=()=>{cuts=[];drawCuts()};el('useCuts').onchange=()=>{update()};
+function resetOutput(){if(outUrl){URL.revokeObjectURL(outUrl);outUrl=null}outputBlob=null;el('trimResult').hidden=true;el('trimProgress').value=0}
+function loadSource(url,name){
+ if(working){say('剪接輸出中，請先取消。');return}
+ clearSourceTimers();const epoch=++sourceEpoch;timelineReadyEpoch=-1;thumbsReadyEpoch=-1;durationOverride=NaN;durationProbeAttempted=-1;
+ resetOutput();if(ownedUrl){URL.revokeObjectURL(ownedUrl);ownedUrl=null}
+ sourceUrl=url;sourceFile=name;cuts=[];drawCuts();thumbGeneration++;
+ el('filmstrip').innerHTML='<span class="no-thumbs">等待來源影片資訊…</span>';
+ [tp,ta,tb].forEach(i=>i.disabled=true);
+ el('thumbStatus').textContent='影片資料載入中，正在等待長度與縮圖…';say('正在讀取影片資訊…');
+ el('trimSourceStatus').textContent='來源：'+name;
+ player.pause();player.src=url;player.load();
+ // loadmetadata 有時在 browser cache 或某些 MP4 上早於期望觸發；以事件與輪詢雙重確認。
+ const probe=()=>{if(epoch!==sourceEpoch){clearSourceTimers();return}initializeTimeline(epoch);if(!validDuration(effectiveDuration())&&player.readyState>=1)probeInfiniteDuration(epoch)};
+ metadataPoll=setInterval(probe,450);
+ metadataTimeout=setTimeout(()=>{if(epoch!==sourceEpoch||timelineReadyEpoch===epoch)return;
+  const d=effectiveDuration();
+  el('thumbStatus').textContent=`尚未取得有效片長（readyState=${player.readyState}, duration=${String(d)}, networkState=${player.networkState}）。正在嘗試片尾定位；如仍未取得片長，請重新封裝影片。`;
+  say('來源可預覽，但時間軸未取得有效片長；請查看上方診斷訊息。');
+  clearSourceTimers();
+ },15000);
+ probe();
+}
+el('trimUseRecorded').addEventListener('click',()=>{const preview=el('preview');if(!preview.src){say('請先完成錄影，或選擇「匯入影片」。');return}loadSource(preview.src,'本次錄製影片')});
+el('trimFile').addEventListener('change',e=>{const file=e.target.files?.[0];if(!file)return;const url=URL.createObjectURL(file);loadSource(url,file.name);ownedUrl=url});
+// metadata / durationchange / canplay / timeupdate 都能完成初始化；避免永遠卡在等待狀態。
+function initializeTimeline(epoch=sourceEpoch){
+ if(epoch!==sourceEpoch||!sourceUrl)return;
+ const d=effectiveDuration();
+ if(!Number.isFinite(d)||d<=0)return;
+ if(timelineReadyEpoch!==epoch){
+  timelineReadyEpoch=epoch;
+  start.value='0';end.value=String(Math.floor(d*10)/10);start.max=end.max=String(d);
+  update();syncLimits();say(`已載入：${fmt(d)}。可拖曳 A/B 或使用縮圖剪輯。`);
+  clearSourceTimers();
+ }
+ if(thumbsReadyEpoch!==epoch){thumbsReadyEpoch=epoch;makeThumbs()}
+}
+for(const evt of ['loadedmetadata','durationchange','canplay','loadeddata','timeupdate']){
+ player.addEventListener(evt,()=>{initializeTimeline();if(!validDuration(effectiveDuration())&&player.readyState>=1)probeInfiniteDuration()});
+};
+player.addEventListener('error',()=>{clearSourceTimers();const code=player.error?.code||'?';say(`無法讀取影片（MediaError ${code}），可能是不支援的編碼。`);el('thumbStatus').textContent=`來源影片解碼錯誤：${code}`});
+[start,end].forEach(n=>n.addEventListener('input',update));
+el('trimSetStart').onclick=()=>{start.value=String(Math.max(0,Math.round(player.currentTime*10)/10));update()};
+el('trimSetEnd').onclick=()=>{end.value=String(Math.round(player.currentTime*10)/10);update()};
+function seek(video,time){return new Promise((resolve,reject)=>{if(Math.abs(video.currentTime-time)<.04&&video.readyState>=2)return resolve();const t=setTimeout(()=>{cleanup();reject(Error('影片定位逾時'))},10000);function ok(){cleanup();resolve()}function cleanup(){clearTimeout(t);video.removeEventListener('seeked',ok)}video.addEventListener('seeked',ok,{once:true});video.currentTime=time})}
+el('trimPlaySelection').onclick=async()=>{try{const {a}=range();player.pause();await seek(player,a);playSelection=true;await player.play();say('正在預覽選取片段。')}catch(e){say('預覽失敗：'+e.message)}};
+player.addEventListener('timeupdate',()=>{if(playSelection&&player.currentTime>=Number(end.value)-.05){if(el('visualLoop').checked){player.currentTime=Number(start.value);player.play().catch(()=>{});}else{player.pause();playSelection=false;say('片段預覽結束。')}}});
+function cleanup(){if(activeTimer){clearInterval(activeTimer);activeTimer=null}if(activeRAF){cancelAnimationFrame(activeRAF);activeRAF=0}try{activeVideo?.pause()}catch{}if(activeVideo){activeVideo.removeAttribute('src');activeVideo.load();activeVideo.remove();activeVideo=null}if(activeStream){activeStream.getTracks().forEach(t=>t.stop());activeStream=null}if(activeAudio){activeAudio.close().catch(()=>{});activeAudio=null}activeRecorder=null;working=false;el('trimCancel').disabled=true;update()}
+el('trimCancel').onclick=()=>{cancelled=true;say('正在取消剪接…');if(activeRecorder?.state==='recording')activeRecorder.stop();else cleanup()};
+el('trimExport').onclick=async()=>{
+ if(working)return;
+ let a,b,segments,totalKeep;try{const d=effectiveDuration();segments=keepSegments(d);if(!segments.length)throw Error('整部影片都在刪除範圍內，沒有可輸出的片段。');totalKeep=segments.reduce((sum,p)=>sum+p.b-p.a,0);a=segments[0].a;b=segments[segments.length-1].b}catch(e){say(e.message);return}
+ if(!window.MediaRecorder||!HTMLCanvasElement.prototype.captureStream){say('瀏覽器不支援本機剪接輸出，請使用桌面 Chrome／Edge。');return}
+ working=true;cancelled=false;resetOutput();el('trimExport').disabled=true;el('trimCancel').disabled=false;
+ const v=document.createElement('video');activeVideo=v;v.playsInline=true;v.preload='auto';v.src=sourceUrl;v.style.cssText='position:fixed;left:-99999px;top:0;width:1px;height:1px;pointer-events:none';document.body.append(v);
+ try{
+  await new Promise((resolve,reject)=>{if(v.readyState>=1)return resolve();v.addEventListener('loadedmetadata',resolve,{once:true});v.addEventListener('error',()=>reject(Error('剪接來源無法解碼')),{once:true})});
+  if(!v.videoWidth||!v.videoHeight)throw Error('無法讀取影片影格');
+  await seek(v,a);
+  const canvas=document.createElement('canvas');canvas.width=v.videoWidth;canvas.height=v.videoHeight;
+  const ctx=canvas.getContext('2d',{alpha:false});if(!ctx)throw Error('Canvas 無法初始化');
+  const draw=()=>{if(!activeVideo||cancelled)return;try{ctx.drawImage(v,0,0,canvas.width,canvas.height)}catch{}activeRAF=requestAnimationFrame(draw)};draw();
+  const fps=30;const capture=canvas.captureStream(fps);activeStream=capture;
+  let audioTracks=[];
+  try{
+   const AudioCtx=window.AudioContext||window.webkitAudioContext;
+   if(AudioCtx){activeAudio=new AudioCtx();const src=activeAudio.createMediaElementSource(v);const dest=activeAudio.createMediaStreamDestination();src.connect(dest);audioTracks=dest.stream.getAudioTracks();await activeAudio.resume()}
+  }catch(e){say('音訊解碼／擷取不可用，將僅輸出畫面：'+e.message)}
+  const combined=new MediaStream([...capture.getVideoTracks(),...audioTracks]);
+  const types=['video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm'];const mime=types.find(t=>MediaRecorder.isTypeSupported(t));if(!mime)throw Error('此瀏覽器無法輸出 WebM');
+  const mr=new MediaRecorder(combined,{mimeType:mime,videoBitsPerSecond:4500000});activeRecorder=mr;const parts=[];
+  mr.ondataavailable=e=>{if(e.data?.size)parts.push(e.data)};
+  mr.onerror=e=>{say('輸出編碼錯誤：'+(e.error?.message||'未知錯誤'));cancelled=true};
+  mr.onstop=()=>{if(!cancelled&&parts.length){outputBlob=new Blob(parts,{type:mime});outUrl=URL.createObjectURL(outputBlob);el('trimOutputPreview').src=outUrl;el('trimResult').hidden=false;el('trimResultInfo').textContent=`${(outputBlob.size/1048576).toFixed(1)} MB｜保留約 ${fmt(totalKeep)}｜WebM`;el('trimProgress').value=100;say('剪接完成，可預覽並下載新影片。')}else say('剪接已取消或沒有取得輸出資料。');cleanup()};
+  mr.start(1000);
+  let segmentIndex=0,completed=0,seekingNext=false;
+  await v.play();
+  say(`開始輸出，保留 ${segments.length} 段，請保持此頁在前景…`);
+  activeTimer=setInterval(async()=>{
+   if(cancelled){if(mr.state==='recording')mr.stop();return}
+   if(seekingNext)return;
+   const seg=segments[segmentIndex];
+   const p=Math.max(0,Math.min(100,(completed+Math.min(Math.max(v.currentTime-seg.a,0),seg.b-seg.a))/totalKeep*100));el('trimProgress').value=p;
+   say(`正在輸出第 ${segmentIndex+1}/${segments.length} 段，約 ${p.toFixed(0)}%。切換剪接點時可能有短暫間隙。`);
+   if(v.ended||v.currentTime>=seg.b-.04){
+     completed+=seg.b-seg.a;segmentIndex++;
+     if(segmentIndex>=segments.length){clearInterval(activeTimer);activeTimer=null;v.pause();if(mr.state==='recording')mr.stop();return}
+     seekingNext=true;v.pause();
+     try{await seek(v,segments[segmentIndex].a);if(!cancelled)await v.play()}catch(e){cancelled=true;say('區間切換失敗：'+e.message);if(mr.state==='recording')mr.stop()}finally{seekingNext=false}
+   }
+  },70);
+ }catch(e){say('剪接失敗：'+e.message);cleanup()}
+};
+
+// v4.4.2 non-destructive visual timeline controls
+const tp=el('timelinePlayhead'),ta=el('timelineA'),tb=el('timelineB');
+let thumbGeneration=0;
+const clamp=(n,min,max)=>Math.max(min,Math.min(max,n));
+function repaintTimeline(){
+ const d=effectiveDuration();if(!Number.isFinite(d)||d<=0)return;
+ const a=clamp(Number(start.value)||0,0,d),b=clamp(Number(end.value)||d,0,d);
+ ta.value=String(a);tb.value=String(b);tp.value=String(clamp(player.currentTime||0,0,d));
+ el('timelineALabel').textContent=fmt(a);el('timelineBLabel').textContent=fmt(b);
+ el('playheadLabel').textContent='播放位置 '+fmt(player.currentTime);
+ el('timelineNeedle').style.left=(clamp(player.currentTime/d,0,1)*100)+'%';
+ el('selectedBand').style.left=(a/d*100)+'%';el('selectedBand').style.width=(Math.max(0,b-a)/d*100)+'%';
+}
+function setTimelineTime(input,t){const d=effectiveDuration();if(!Number.isFinite(d)||d<=0)return;
+ const n=clamp(t,0,d);input.value=n.toFixed(2);update();repaintTimeline();}
+function syncLimits(){const d=effectiveDuration();if(!Number.isFinite(d)||d<=0)return;[tp,ta,tb].forEach(i=>{i.disabled=false;i.max=String(d)});el('durationLabel').textContent=fmt(d);repaintTimeline()}
+async function makeThumbs(){
+ const generation=++thumbGeneration;
+ const d=effectiveDuration(),strip=el('filmstrip');if(!sourceUrl||!Number.isFinite(d)||d<=0)return;
+ strip.replaceChildren();el('thumbStatus').textContent='正在產生時間軸縮圖…';
+ const v=document.createElement('video');v.preload='auto';v.muted=true;v.playsInline=true;v.src=sourceUrl;
+ try{
+  await new Promise((res,rej)=>{if(v.readyState>=1)return res();v.addEventListener('loadedmetadata',res,{once:true});v.addEventListener('error',()=>rej(Error('影片讀取失敗')),{once:true})});
+  const c=document.createElement('canvas');c.width=150;c.height=84;const ctx=c.getContext('2d');
+  for(let i=0;i<12;i++){
+   if(generation!==thumbGeneration)return;
+   const target=clamp(d*(i+.5)/12,0,Math.max(0,d-.05));
+   await new Promise((res,rej)=>{const timer=setTimeout(()=>{v.removeEventListener('seeked',done);rej(Error('定位逾時'))},5000);const done=()=>{clearTimeout(timer);res()};v.addEventListener('seeked',done,{once:true});v.currentTime=target});
+   if(generation!==thumbGeneration)return;
+   const im=document.createElement('img');im.alt='時間 '+fmt(target);try{ctx.fillStyle='#111';ctx.fillRect(0,0,c.width,c.height);ctx.drawImage(v,0,0,c.width,c.height);im.src=c.toDataURL('image/jpeg',.63)}catch{continue}strip.append(im);
+  }
+  if(generation===thumbGeneration)el('thumbStatus').textContent=strip.children.length?`已產生 ${strip.children.length} 張縮圖；拖曳控制桿或點縮圖定位。`:'無法擷取影格縮圖，但 A／B 時間軸可正常操作。';
+ }catch(e){if(generation===thumbGeneration)el('thumbStatus').textContent='縮圖無法完整產生：'+e.message+'；仍可使用拖曳時間軸。'}finally{v.removeAttribute('src');v.load()}
+}
+// 時間軸初始化統一由 initializeTimeline 管理，避免事件重複觸發縮圖。
+[start,end].forEach(i=>i.addEventListener('input',repaintTimeline));
+player.addEventListener('timeupdate',repaintTimeline);
+player.addEventListener('seeked',repaintTimeline);
+tp.addEventListener('input',()=>{player.pause();playSelection=false;player.currentTime=Number(tp.value);repaintTimeline()});
+ta.addEventListener('input',()=>{const n=Math.min(Number(ta.value),Number(end.value)-.15);setTimelineTime(start,Math.max(0,n));player.currentTime=Number(start.value)});
+tb.addEventListener('input',()=>{const n=Math.max(Number(tb.value),Number(start.value)+.15);setTimelineTime(end,n);player.currentTime=Number(end.value)});
+el('filmstrip').addEventListener('click',e=>{const d=effectiveDuration();if(!Number.isFinite(d)||d<=0)return;const r=e.currentTarget.getBoundingClientRect();player.pause();playSelection=false;player.currentTime=clamp((e.clientX-r.left)/r.width,0,1)*d;repaintTimeline()});
+el('visualSetA').onclick=()=>{setTimelineTime(start,Math.min(player.currentTime,Number(end.value)-.15))};
+el('visualSetB').onclick=()=>{setTimelineTime(end,Math.max(player.currentTime,Number(start.value)+.15))};
+for(const [id,step] of [['visualStepBack',-.1],['visualStepForward',.1]])el(id).onclick=()=>{player.pause();playSelection=false;player.currentTime=clamp(player.currentTime+step,0,effectiveDuration()||0);repaintTimeline()};
+el('visualPreview').onclick=()=>el('trimPlaySelection').click();
+el('timelineRetry').onclick=()=>{if(!sourceUrl){say('請先匯入 MP4／WebM。');return}if(Number.isFinite(player.duration)&&player.duration>0){timelineReadyEpoch=-1;thumbsReadyEpoch=-1;initializeTimeline();}else{durationProbeAttempted=-1;probeInfiniteDuration(sourceEpoch);say('正在重新探測片長…');}};
+player.addEventListener('timeupdate',()=>{if(el('visualLoop').checked && playSelection && player.currentTime>=Number(end.value)-.12){player.currentTime=Number(start.value);player.play().catch(()=>{});}});
+
+
+el('trimDownload').onclick=()=>{if(!outUrl||!outputBlob)return;const name=(sourceFile||'SUOU-recording').replace(/\.[^/.]+$/,'').replace(/[\\/:*?"<>|]/g,'_').slice(0,100);const link=document.createElement('a');link.href=outUrl;link.download=`${name}-trimmed.webm`;document.body.append(link);link.click();link.remove()};
+window.addEventListener('pagehide',()=>{if(ownedUrl)URL.revokeObjectURL(ownedUrl);if(outUrl)URL.revokeObjectURL(outUrl)});
+})();
+</script>
+<script type="module">
+// v4.4.2 fast trim, isolated from the existing realtime transcoding editor.
+const $ = id => document.getElementById(id);
+const go=$('fastTrimGo'),stop=$('fastTrimStop'),status=$('fastTrimStatus'),progress=$('fastTrimProgress');
+let ffmpeg=null, FFmpegFetch=null, running=false, cancelRequested=false, resultUrl=null, resultBlob=null, resultName='';
+const report = msg => { status.textContent=msg; };
+const fail=e=>{console.error('[SUOU FastTrim]',e);report('快速剪裁失敗：'+(e?.message||String(e))+'。可使用原有「剪接並輸出 WebM」功能。')};
+const fileNameSafe=s=>(s||'SUOU-video').replace(/[^\p{L}\p{N}._-]/gu,'_').slice(0,100);
+function disposeResult(){if(resultUrl)URL.revokeObjectURL(resultUrl);resultUrl=null;resultBlob=null;$('fastTrimResult').hidden=true}
+async function engine(){
+ if(ffmpeg)return ffmpeg;
+ report('首次載入 FFmpeg WebAssembly 引擎…');
+ const base='https://cdn.jsdelivr.net/npm/';
+ const [{FFmpeg},{toBlobURL,fetchFile}]=await Promise.all([
+  import(base+'@ffmpeg/ffmpeg@0.12.15/dist/esm/index.js'),
+  import(base+'@ffmpeg/util@0.12.2/dist/esm/index.js')
+ ]);
+ FFmpegFetch=fetchFile;
+ const f=new FFmpeg();
+ const workerModule=base+'@ffmpeg/ffmpeg@0.12.15/dist/esm/worker.js';
+ const workerURL=URL.createObjectURL(new Blob(['import '+JSON.stringify(workerModule)+';'],{type:'text/javascript'}));
+ const coreURL=await toBlobURL(base+'@ffmpeg/core@0.12.10/dist/umd/ffmpeg-core.js','text/javascript');
+ const wasmURL=await toBlobURL(base+'@ffmpeg/core@0.12.10/dist/umd/ffmpeg-core.wasm','application/wasm');
+ f.on('log',({message})=>{if(/error|invalid|unsupported/i.test(message))console.warn('[SUOU FFmpeg]',message)});
+ f.on('progress',({progress:p})=>{if(running&&Number.isFinite(p))progress.value=Math.min(99,Math.max(0,p*100))});
+ try{await f.load({classWorkerURL:workerURL,coreURL,wasmURL});}finally{URL.revokeObjectURL(workerURL);}
+ ffmpeg=f; $('fastTrimEngine').textContent='FFmpeg 引擎已就緒';return f;
+}
+function selectedSource(){
+ const local=$('trimFile')?.files?.[0];
+ // Prefer imported source only when its name matches the current editor source.
+ const desc=$('trimSourceStatus')?.textContent||'';
+ if(local&&desc.includes(local.name))return {data:local,name:local.name};
+ if(desc.includes('本次錄製影片')){
+  const url=$('preview')?.src;
+  if(url&&url.startsWith('blob:'))return {data:url,name:'SUOU-recording.webm'};
+ }
+ throw Error('請在剪輯區重新匯入本機 MP4／WebM，或按「使用上方錄影」，再執行快速剪裁');
+}
+function selectedRange(){
+ const a=Number($('trimStart').value),b=Number($('trimEnd').value);
+ if(!Number.isFinite(a)||!Number.isFinite(b)||a<0||b<=a+.15)throw Error('A／B 區間無效：終點必須晚於起點');
+ return {a,b};
+}
+const stamp = n=>Number(n).toFixed(3);
+go.addEventListener('click', async ()=>{
+ if(running)return;
+ let f,inName,outName;
+ try{
+  const input=selectedSource(),{a,b}=selectedRange(),duration=b-a;
+  const ext=/\.mp4$/i.test(input.name)?'mp4':'webm';
+  const inputExt=/\.(mp4|webm)$/i.test(input.name)?input.name.match(/\.(mp4|webm)$/i)[1].toLowerCase():ext;
+  // Avoid excessive in-memory copies for extremely large videos.
+  if(input.data instanceof File&&input.data.size>900*1024*1024)throw Error('檔案超過 900 MB：請下載下方 Windows 大檔無損剪裁工具，不要改用會重新編碼的 WebM 輸出。');
+  running=true;cancelRequested=false;disposeResult();go.disabled=true;stop.disabled=false;progress.value=0;
+  f=await engine();
+  if(cancelRequested)throw Error('已取消');
+  inName='source_'+Date.now()+'.'+inputExt;outName='clip_'+Date.now()+'.'+ext;
+  report('正在讀入影片（處理完全在瀏覽器本機）…');
+  await f.writeFile(inName,await FFmpegFetch(input.data));
+  if(cancelRequested)throw Error('已取消');
+  report(`快速複製串流：${stamp(a)} ～ ${stamp(b)} 秒…`);
+  // Input-side seeking favors speed; -t caps the output length. copyts deliberately avoided.
+  const args=['-hide_banner','-loglevel','error','-ss',stamp(a),'-i',inName,'-t',stamp(duration),'-map','0:v:0','-map','0:a?','-c','copy','-avoid_negative_ts','make_zero',outName];
+  const code=await f.exec(args,0);
+  if(code!==0)throw Error('FFmpeg 無法複製來源串流，請改用精準 WebM 剪輯');
+  if(cancelRequested)throw Error('已取消');
+  const bytes=await f.readFile(outName);
+  if(!bytes||bytes.length===0)throw Error('沒有產生輸出檔案');
+  const mime=ext==='mp4'?'video/mp4':'video/webm';
+  resultBlob=new Blob([bytes],{type:mime});resultUrl=URL.createObjectURL(resultBlob);
+  resultName=fileNameSafe(input.name.replace(/\.(mp4|webm)$/i,''))+'-fast-trim.'+ext;
+  $('fastTrimPreview').src=resultUrl;$('fastTrimResult').hidden=false;
+  $('fastTrimInfo').textContent=(resultBlob.size/1048576).toFixed(1)+' MB｜'+resultName;
+  progress.value=100;report('快速無損剪裁完成。請預覽確認起始影格、聲音與長度，再下載。');
+ }catch(e){if(cancelRequested)report('已取消快速剪裁。');else fail(e)}
+ finally{
+  if(f){for(const n of [inName,outName])if(n){try{await f.deleteFile(n)}catch{}}}
+  running=false;go.disabled=false;stop.disabled=true;
+ }
+});
+stop.onclick=()=>{
+ if(!running)return;cancelRequested=true;report('正在取消；如果引擎正在處理大型檔案，可能需要等待。');
+ // Do not terminate FFmpeg during FS operations, to avoid destabilizing browser app.
+};
+$('fastTrimDownload').onclick=()=>{if(!resultUrl)return;const a=document.createElement('a');a.href=resultUrl;a.download=resultName;document.body.append(a);a.click();a.remove()};
+</script>
+</body></html>
